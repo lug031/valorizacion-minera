@@ -1,0 +1,78 @@
+import type { ValuationActor } from '../../domain/models/valuation-actor';
+import type { Valuation, ValuationListItem, ValuationSnapshot } from '../../domain/models/valuation';
+
+export interface ValuationSearchFilters {
+  code?: string;
+  fechaFrom?: string;
+  fechaTo?: string;
+  materialTypeCode?: string;
+  providerName?: string;
+}
+
+export interface ValuationInsert {
+  id: string;
+  code: string;
+  materialTypeCode: string;
+  providerId: string | null;
+  providerName: string | null;
+  fecha: string;
+  observaciones: string | null;
+  formulaVersion: string;
+  snapshot: ValuationSnapshot;
+  createdByUserId: string;
+  createdByUsername: string;
+  updatedByUserId: string;
+  updatedByUsername: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ValuationUpdate {
+  snapshot: ValuationSnapshot;
+  updatedAt: string;
+  code: string;
+  materialTypeCode: string;
+  providerId: string | null;
+  providerName: string | null;
+  fecha: string;
+  observaciones: string | null;
+  updatedByUserId: string;
+  updatedByUsername: string;
+}
+
+/**
+ * Contrato del repositorio — implementación con expo-sqlite en Fase 6.
+ */
+export interface ValuationRepository {
+  insert(row: ValuationInsert): Promise<void>;
+  findById(id: string): Promise<Valuation | null>;
+  findByCode(code: string): Promise<Valuation | null>;
+  search(filters: ValuationSearchFilters): Promise<ValuationListItem[]>;
+  update(id: string, data: ValuationUpdate): Promise<void>;
+  delete(id: string, actorUserId: string): Promise<void>;
+  /** Copia snapshot inmutable con nuevo id/código (nueva valoración). */
+  duplicate(sourceId: string, newCode: string, actor: ValuationActor): Promise<string>;
+}
+
+export function serializeSnapshot(snapshot: ValuationSnapshot): string {
+  return JSON.stringify(snapshot);
+}
+
+export function parseSnapshot(json: string): ValuationSnapshot {
+  const snapshot = tryParseSnapshot(json);
+  if (!snapshot) {
+    throw new Error('No se pudo leer la cotización guardada');
+  }
+  return snapshot;
+}
+
+/** Parseo seguro para UI: null si el JSON está corrupto o incompleto. */
+export function tryParseSnapshot(json: string): ValuationSnapshot | null {
+  try {
+    const parsed = JSON.parse(json) as ValuationSnapshot;
+    if (!parsed?.results?.scenarios?.length) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}

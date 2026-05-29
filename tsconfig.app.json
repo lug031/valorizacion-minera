@@ -1,0 +1,15 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@domain/*": ["src/domain/*"],
+      "@data/*": ["src/data/*"],
+      "@utils/*": ["src/utils/*"],
+      "@presentation/*": ["src/presentation/*"]
+    }
+  },
+  "include": ["app/**/*.ts", "app/**/*.tsx", "src/presentation/**/*.ts", "src/presentation/**/*.tsx", "src/domain/**/*.ts", "src/data/**/*.ts", "src/services/**/*.ts", "src/services/**/*.tsx", "src/infrastructure/**/*.ts", "src/infrastructure/**/*.tsx", "src/utils/**/*.ts"],
+  "exclude": ["node_modules", "__tests__"]
+}
