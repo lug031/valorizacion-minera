@@ -26,17 +26,17 @@ const baseMetadata: SyncMetadata = {
 };
 
 describe('sync-records-display', () => {
-  it('expone filas en español con hints para proveedores y config global', () => {
+  it('expone solo filas operativas sin detalle técnico', () => {
     const rows = buildSyncRecordRows(baseMetadata);
-    expect(rows).toHaveLength(5);
-    expect(rows.find((r) => r.label.includes('Proveedores'))?.value).toBe(3);
-    expect(rows.find((r) => r.label.includes('Defaults por proveedor'))?.value).toBe(2);
-    expect(rows.find((r) => r.label.includes('Configuración comercial'))?.hint).toContain('Registro maestro');
+    expect(rows).toHaveLength(3);
+    expect(rows.map((r) => r.label)).toEqual(['Materiales', 'Rangos de maquila', 'Proveedores']);
+    expect(rows.find((r) => r.label === 'Proveedores')?.value).toBe(3);
   });
 
-  it('usa título distinto según estado de sync', () => {
+  it('usa subtítulo breve según estado de sync', () => {
     expect(syncRecordsCardTitle('success')).toBe('Registros aplicados');
-    expect(syncRecordsCardTitle('error')).toBe('Registros recibidos de la nube');
-    expect(syncRecordsCardSubtitle('success')).toContain('SQLite');
+    expect(syncRecordsCardTitle('error')).toBe('Último intento de sincronización');
+    expect(syncRecordsCardSubtitle('success')).toContain('valores comerciales');
+    expect(syncRecordsCardSubtitle('idle')).toBeNull();
   });
 });

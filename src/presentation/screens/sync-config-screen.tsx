@@ -87,7 +87,7 @@ export function SyncConfigScreen() {
                   </Text>
                 ))}
                 <Text style={styles.preserveHint}>
-                  No se modificó SQLite local. Se conserva el último snapshot válido.
+                  No se modificó la configuración local. Se conserva la última versión válida.
                 </Text>
               </View>
             ) : null}
@@ -97,16 +97,15 @@ export function SyncConfigScreen() {
         <Card style={styles.card}>
           <Card.Content>
             <Text variant="titleMedium">{syncRecordsCardTitle(metadata?.status)}</Text>
-            <Text variant="bodySmall" style={styles.cardSubtitle}>
-              {syncRecordsCardSubtitle(metadata?.status)}
-            </Text>
+            {syncRecordsCardSubtitle(metadata?.status) ? (
+              <Text variant="bodySmall" style={styles.cardSubtitle}>
+                {syncRecordsCardSubtitle(metadata?.status)}
+              </Text>
+            ) : null}
             {recordRows.map((row) => (
-              <View key={row.label} style={styles.recordBlock}>
-                <View style={styles.row}>
-                  <Text style={styles.rowLabel}>{row.label}</Text>
-                  <Text style={styles.rowValue}>{row.value}</Text>
-                </View>
-                {row.hint ? <Text style={styles.rowHint}>{row.hint}</Text> : null}
+              <View key={row.label} style={styles.row}>
+                <Text>{row.label}</Text>
+                <Text style={styles.rowValue}>{row.value}</Text>
               </View>
             ))}
           </Card.Content>
@@ -161,15 +160,11 @@ const styles = StyleSheet.create({
   issuesBox: { marginTop: 10, gap: 4 },
   issueItem: { color: '#b42318', fontSize: 13 },
   preserveHint: { marginTop: 6, fontSize: 12, opacity: 0.75 },
-  recordBlock: { marginTop: 8 },
   row: {
+    marginTop: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 12,
   },
-  rowLabel: { flex: 1, fontSize: 14 },
-  rowValue: { fontWeight: '600', fontSize: 14, minWidth: 24, textAlign: 'right' },
-  rowHint: { marginTop: 2, fontSize: 11, opacity: 0.65, lineHeight: 15 },
+  rowValue: { fontWeight: '600' },
   btnContent: { paddingVertical: 10 },
 });
