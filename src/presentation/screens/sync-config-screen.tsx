@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Stack } from 'expo-router';
 import { Button, Card, Text } from 'react-native-paper';
+import { Stack } from 'expo-router';
 import { screenPadding } from '../theme/app-theme';
 import { useSyncStore } from '../store/sync-store';
+import { useSettingsStore } from '../store/settings-store';
+import { InterMetadataSummary } from '../components/settings/InterMetadataSummary';
 
 function formatTimestamp(value: string | null): string {
   if (!value) return 'Aún no sincronizado';
@@ -35,6 +37,7 @@ export function SyncConfigScreen() {
   const hydrating = useSyncStore((s) => s.hydrating);
   const hydrate = useSyncStore((s) => s.hydrate);
   const syncNow = useSyncStore((s) => s.syncNow);
+  const settings = useSettingsStore();
 
   useEffect(() => {
     void hydrate();
@@ -110,6 +113,29 @@ export function SyncConfigScreen() {
               <Text>AppSettings</Text>
               <Text>{metadata?.recordsAppSettings ?? 0}</Text>
             </View>
+          </Card.Content>
+        </Card>
+
+        <Card style={styles.card}>
+          <Card.Content>
+            <Text variant="titleMedium">Precio internacional (INTER)</Text>
+            <Text variant="bodySmall" style={styles.label}>
+              Valores maestros sincronizados desde la web (referencia para nuevas cotizaciones).
+            </Text>
+            <InterMetadataSummary
+              interGold={settings.interGold}
+              interSilver={settings.interSilver}
+              meta={{
+                interGoldSource: settings.interGoldSource,
+                interSilverSource: settings.interSilverSource,
+                interGoldFetchedAt: settings.interGoldFetchedAt,
+                interSilverFetchedAt: settings.interSilverFetchedAt,
+                interFetchStatus: settings.interFetchStatus,
+                interFetchError: settings.interFetchError,
+              }}
+              lastSyncAt={metadata?.lastSyncAt ?? null}
+              compact
+            />
           </Card.Content>
         </Card>
 

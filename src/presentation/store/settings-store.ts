@@ -15,6 +15,24 @@ export interface SettingsDefaults {
   interSilver: string;
 }
 
+export interface InterSyncMetadata {
+  interGoldSource: string | null;
+  interSilverSource: string | null;
+  interGoldFetchedAt: string | null;
+  interSilverFetchedAt: string | null;
+  interFetchStatus: string | null;
+  interFetchError: string | null;
+}
+
+const EMPTY_INTER_META: InterSyncMetadata = {
+  interGoldSource: null,
+  interSilverSource: null,
+  interGoldFetchedAt: null,
+  interSilverFetchedAt: null,
+  interFetchStatus: null,
+  interFetchError: null,
+};
+
 const FALLBACK: SettingsDefaults = {
   factor: COTIZADOR_DEFAULTS.factor,
   recPercentGold: COTIZADOR_DEFAULTS.recPercentGold,
@@ -26,6 +44,24 @@ const FALLBACK: SettingsDefaults = {
   interGold: COTIZADOR_DEFAULTS.interGold,
   interSilver: COTIZADOR_DEFAULTS.interSilver,
 };
+
+function interMetaFromAppSettings(s: AppSettings): InterSyncMetadata {
+  return {
+    interGoldSource: s.interGoldSource ?? null,
+    interSilverSource: s.interSilverSource ?? null,
+    interGoldFetchedAt: s.interGoldFetchedAt ?? null,
+    interSilverFetchedAt: s.interSilverFetchedAt ?? null,
+    interFetchStatus: s.interFetchStatus ?? null,
+    interFetchError: s.interFetchError ?? null,
+  };
+}
+
+function appSettingsToState(s: AppSettings): SettingsDefaults & InterSyncMetadata {
+  return {
+    ...appSettingsToDefaults(s),
+    ...interMetaFromAppSettings(s),
+  };
+}
 
 function appSettingsToDefaults(s: AppSettings): SettingsDefaults {
   return {
@@ -41,23 +77,46 @@ function appSettingsToDefaults(s: AppSettings): SettingsDefaults {
   };
 }
 
-function defaultsToAppSettings(d: SettingsDefaults): AppSettings {
+function buildAppSettings(
+  defaults: SettingsDefaults,
+  interMeta: InterSyncMetadata,
+  previous?: AppSettings | null
+): AppSettings {
+  const nextMeta = { ...interMeta };
+
+  if (previous) {
+    if (defaults.interGold !== (previous.defaultInterGold ?? FALLBACK.interGold)) {
+      nextMeta.interGoldSource = 'manual';
+      nextMeta.interGoldFetchedAt = null;
+    }
+    if (defaults.interSilver !== (previous.defaultInterSilver ?? FALLBACK.interSilver)) {
+      nextMeta.interSilverSource = 'manual';
+      nextMeta.interSilverFetchedAt = null;
+    }
+  }
+
   return {
     id: 'default',
-    factor: d.factor,
-    defaultConsumos: d.consumos,
-    defaultFlete: d.flete,
-    defaultRcGold: d.rcGold,
-    defaultRcSilver: d.rcSilver,
-    defaultRecPercentGold: d.recPercentGold,
-    defaultRecPercentSilver: d.recPercentSilver,
-    defaultInterGold: d.interGold,
-    defaultInterSilver: d.interSilver,
+    factor: defaults.factor,
+    defaultConsumos: defaults.consumos,
+    defaultFlete: defaults.flete,
+    defaultRcGold: defaults.rcGold,
+    defaultRcSilver: defaults.rcSilver,
+    defaultRecPercentGold: defaults.recPercentGold,
+    defaultRecPercentSilver: defaults.recPercentSilver,
+    defaultInterGold: defaults.interGold,
+    defaultInterSilver: defaults.interSilver,
+    interGoldSource: nextMeta.interGoldSource,
+    interSilverSource: nextMeta.interSilverSource,
+    interGoldFetchedAt: nextMeta.interGoldFetchedAt,
+    interSilverFetchedAt: nextMeta.interSilverFetchedAt,
+    interFetchStatus: nextMeta.interFetchStatus,
+    interFetchError: nextMeta.interFetchError,
     updatedAt: new Date().toISOString(),
   };
 }
 
-interface SettingsState extends SettingsDefaults {
+interface SettingsState extends SettingsDefaults, InterSyncMetadata {
   isHydrated: boolean;
   hydrateFromDb: () => Promise<void>;
   setDefaults: (partial: Partial<SettingsDefaults>) => Promise<void>;
@@ -66,32 +125,70 @@ interface SettingsState extends SettingsDefaults {
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   ...FALLBACK,
+  ...EMPTY_INTER_META,
   isHydrated: false,
 
   hydrateFromDb: async () => {
     const row = await configRepository.getAppSettings();
     if (row) {
-      set({ ...appSettingsToDefaults(row), isHydrated: true });
+      set({ ...appSettingsToState(row), isHydrated: true });
     } else {
-      set({ ...FALLBACK, isHydrated: true });
+      set({ ...FALLBACK, ...EMPTY_INTER_META, isHydrated: true });
     }
   },
 
   setDefaults: async (partial) => {
-    const next = { ...get(), ...partial };
+    const current = get();
+    const previous = await configRepository.getAppSettings();
     const {
       isHydrated: _h,
       hydrateFromDb: _a,
       setDefaults: _b,
       reset: _c,
-      ...defaults
-    } = next;
-    set(defaults);
-    await configRepository.saveAppSettings(defaultsToAppSettings(defaults as SettingsDefaults));
+      interGoldSource,
+      interSilverSource,
+      interGoldFetchedAt,
+      interSilverFetchedAt,
+      interFetchStatus,
+      interFetchError,
+      ...defaultsBefore
+    } = current;
+
+    const nextDefaults = { ...defaultsBefore, ...partial };
+    const interMeta: InterSyncMetadata = {
+      interGoldSource,
+      interSilverSource,
+      interGoldFetchedAt,
+      interSilverFetchedAt,
+      interFetchStatus,
+      interFetchError,
+    };
+
+    const payload = buildAppSettings(nextDefaults, interMeta, previous);
+    set({ ...nextDefaults, ...interMetaFromAppSettings(payload) });
+    await configRepository.saveAppSettings(payload);
   },
 
   reset: async () => {
-    set(FALLBACK);
-    await configRepository.saveAppSettings(defaultsToAppSettings(FALLBACK));
+    set({ ...FALLBACK, ...EMPTY_INTER_META });
+    await configRepository.saveAppSettings({
+      id: 'default',
+      factor: FALLBACK.factor,
+      defaultConsumos: FALLBACK.consumos,
+      defaultFlete: FALLBACK.flete,
+      defaultRcGold: FALLBACK.rcGold,
+      defaultRcSilver: FALLBACK.rcSilver,
+      defaultRecPercentGold: FALLBACK.recPercentGold,
+      defaultRecPercentSilver: FALLBACK.recPercentSilver,
+      defaultInterGold: FALLBACK.interGold,
+      defaultInterSilver: FALLBACK.interSilver,
+      interGoldSource: 'reference',
+      interSilverSource: 'reference',
+      interGoldFetchedAt: null,
+      interSilverFetchedAt: null,
+      interFetchStatus: null,
+      interFetchError: null,
+      updatedAt: new Date().toISOString(),
+    });
   },
 }));

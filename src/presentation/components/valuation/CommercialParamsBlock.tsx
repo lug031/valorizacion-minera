@@ -7,11 +7,13 @@ import { TwoColumnGrid } from '../ui/TwoColumnGrid';
 import { FormNumberField } from '../ui/FormNumberField';
 import { MetalColumnHeader } from '../ui/MetalColumnHeader';
 import { CommercialSuggestionText } from '../ui/CommercialSuggestionText';
+import { InterSyncedHint } from './InterSyncedHint';
 import { cotizadorStyles } from '../../theme/cotizador-styles';
 import {
   formatMaquilaSuggestionLabel,
   formatRcGoldSuggestionLabel,
 } from '../../utils/commercial-suggestion-ui';
+import type { InterMetalHint } from '../../utils/inter-sync-hint';
 
 interface Props {
   control: Control<ValuationFormValues>;
@@ -19,17 +21,21 @@ interface Props {
   suggestedMaquila: string | null;
   suggestedRcGold: string | null;
   onMaquilaEdit?: () => void;
+  interGoldHint?: InterMetalHint | null;
+  interSilverHint?: InterMetalHint | null;
 }
 
 function MetalCommercialColumn({
   control,
   metal,
   rcSuggestionText,
+  interHint,
   alignRcRow,
 }: {
   control: Control<ValuationFormValues>;
   metal: 'gold' | 'silver';
   rcSuggestionText?: string | null;
+  interHint?: InterMetalHint | null;
   alignRcRow?: boolean;
 }) {
   const rc = metal === 'gold' ? 'scenario.rcGold' : 'scenario.rcSilver';
@@ -44,6 +50,7 @@ function MetalCommercialColumn({
         reserveSpace={alignRcRow}
       />
       <FormNumberField control={control} name={inter} label="INTER" />
+      <InterSyncedHint hint={interHint ?? null} />
     </View>
   );
 }
@@ -54,6 +61,8 @@ export function CommercialParamsBlock({
   suggestedMaquila,
   suggestedRcGold,
   onMaquilaEdit,
+  interGoldHint,
+  interSilverHint,
 }: Props) {
   const rcHint =
     suggestedRcGold != null ? formatRcGoldSuggestionLabel(suggestedRcGold) : null;
@@ -71,6 +80,7 @@ export function CommercialParamsBlock({
             control={control}
             metal="gold"
             rcSuggestionText={rcHint}
+            interHint={interGoldHint}
             alignRcRow={alignRcRow}
           />
         }
@@ -79,6 +89,7 @@ export function CommercialParamsBlock({
             control={control}
             metal="silver"
             rcSuggestionText={rcHint}
+            interHint={interSilverHint}
             alignRcRow={alignRcRow}
           />
         }

@@ -4,7 +4,7 @@
  */
 
 export const DB_NAME = 'valorizacion_minera.db';
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export const CREATE_TABLES_SQL: readonly string[] = [
   `CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -90,6 +90,12 @@ export const CREATE_TABLES_SQL: readonly string[] = [
     default_rec_percent_silver TEXT,
     default_inter_gold TEXT,
     default_inter_silver TEXT,
+    inter_gold_source TEXT,
+    inter_silver_source TEXT,
+    inter_gold_fetched_at TEXT,
+    inter_silver_fetched_at TEXT,
+    inter_fetch_status TEXT,
+    inter_fetch_error TEXT,
     updated_at TEXT NOT NULL
   );`,
 

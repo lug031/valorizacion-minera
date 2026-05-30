@@ -110,4 +110,20 @@ export async function runMigrations(db: SqlExecutor): Promise<void> {
       );
     });
   }
+
+  if (currentVersion < 5) {
+    await db.withTransaction(async () => {
+      await addColumnIfMissing(db, 'app_settings', 'inter_gold_source', 'TEXT');
+      await addColumnIfMissing(db, 'app_settings', 'inter_silver_source', 'TEXT');
+      await addColumnIfMissing(db, 'app_settings', 'inter_gold_fetched_at', 'TEXT');
+      await addColumnIfMissing(db, 'app_settings', 'inter_silver_fetched_at', 'TEXT');
+      await addColumnIfMissing(db, 'app_settings', 'inter_fetch_status', 'TEXT');
+      await addColumnIfMissing(db, 'app_settings', 'inter_fetch_error', 'TEXT');
+
+      await db.run(
+        `INSERT OR REPLACE INTO schema_migrations (version, applied_at) VALUES (?, datetime('now'))`,
+        [5]
+      );
+    });
+  }
 }

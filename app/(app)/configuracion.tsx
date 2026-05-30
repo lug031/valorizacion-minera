@@ -6,6 +6,8 @@ import { useAuthStore } from '../../src/presentation/store/auth-store';
 import { useSettingsStore } from '../../src/presentation/store/settings-store';
 import { canManageSettings } from '../../src/presentation/utils/role-access';
 import { FormNumberField } from '../../src/presentation/components/ui/FormNumberField';
+import { InterMetadataSummary } from '../../src/presentation/components/settings/InterMetadataSummary';
+import { useSyncStore } from '../../src/presentation/store/sync-store';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { configFormSchema, type ConfigFormValues } from '../../src/presentation/forms/config-form-schema';
@@ -16,11 +18,13 @@ export default function ConfiguracionScreen() {
   const settings = useSettingsStore();
   const setDefaults = useSettingsStore((s) => s.setDefaults);
   const reset = useSettingsStore((s) => s.reset);
+  const lastSyncAt = useSyncStore((s) => s.metadata?.lastSyncAt ?? null);
 
   useEffect(() => {
     if (!canManageSettings(user?.role)) {
       router.replace('/(app)/dashboard');
     }
+    void useSyncStore.getState().hydrate();
   }, [user?.role]);
 
   const { control, handleSubmit } = useForm<ConfigFormValues>({
@@ -74,8 +78,26 @@ export default function ConfiguracionScreen() {
         <FormNumberField control={control} name="rcSilver" label="RC plata (US$/oz)" />
         <FormNumberField control={control} name="consumos" label="Consumos (US$/TMS)" />
         <FormNumberField control={control} name="flete" label="Flete (US$/TMS)" />
-        <FormNumberField control={control} name="interGold" label="INTER oro (US$)" />
-        <FormNumberField control={control} name="interSilver" label="INTER plata (US$)" />
+        <FormNumberField control={control} name="interGold" label="INTER oro (US$/oz)" />
+        <FormNumberField control={control} name="interSilver" label="INTER plata (US$/oz)" />
+        <View style={styles.interMeta}>
+          <Text variant="labelMedium" style={styles.interMetaTitle}>
+            Referencia sincronizada (solo lectura)
+          </Text>
+          <InterMetadataSummary
+            interGold={settings.interGold}
+            interSilver={settings.interSilver}
+            meta={{
+              interGoldSource: settings.interGoldSource,
+              interSilverSource: settings.interSilverSource,
+              interGoldFetchedAt: settings.interGoldFetchedAt,
+              interSilverFetchedAt: settings.interSilverFetchedAt,
+              interFetchStatus: settings.interFetchStatus,
+              interFetchError: settings.interFetchError,
+            }}
+            lastSyncAt={lastSyncAt}
+          />
+        </View>
         <Button mode="contained" onPress={onSave} style={styles.btn} contentStyle={styles.btnContent}>
           Guardar valores iniciales
         </Button>
@@ -96,6 +118,16 @@ const styles = StyleSheet.create({
   deniedText: { textAlign: 'center', fontWeight: '600' },
   deniedSub: { textAlign: 'center', marginTop: 8, opacity: 0.75 },
   hint: { marginBottom: 16, opacity: 0.75 },
+  interMeta: {
+    marginTop: 12,
+    marginBottom: 8,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  interMetaTitle: { marginBottom: 8, fontWeight: '600' },
   btn: { marginTop: 8 },
   btnContent: { paddingVertical: 10 },
 });

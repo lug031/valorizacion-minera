@@ -58,6 +58,12 @@ export const cloudAppSettingsSchema = z.object({
   defaultRecPercentSilver: nullableString,
   defaultInterGold: nullableString,
   defaultInterSilver: nullableString,
+  interGoldSource: nullableString,
+  interSilverSource: nullableString,
+  interGoldFetchedAt: nullableString,
+  interSilverFetchedAt: nullableString,
+  interFetchStatus: nullableString,
+  interFetchError: nullableString,
   updatedAt: nullableString,
 });
 

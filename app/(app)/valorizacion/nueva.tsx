@@ -13,11 +13,27 @@ import { LotDataBlock } from '../../../src/presentation/components/valuation/Lot
 import { GradesRecoveryBlock } from '../../../src/presentation/components/valuation/GradesRecoveryBlock';
 import { CommercialParamsBlock } from '../../../src/presentation/components/valuation/CommercialParamsBlock';
 import { ScenarioTabs } from '../../../src/presentation/components/valuation/ScenarioTabs';
+import { useSettingsStore } from '../../../src/presentation/store/settings-store';
+import { useSyncStore } from '../../../src/presentation/store/sync-store';
+import { buildInterMetalHint } from '../../../src/presentation/utils/inter-sync-hint';
 import { screenPadding } from '../../../src/presentation/theme/app-theme';
 import { isScenarioComparisonUiVisible } from '../../../src/config/scenario-comparison-access';
 
 export default function NewValuationScreen() {
   const draft = useValuationDraftStore((s) => s.draft);
+  const settings = useSettingsStore();
+  const lastSyncAt = useSyncStore((s) => s.metadata?.lastSyncAt ?? null);
+
+  const interMeta = {
+    interGoldSource: settings.interGoldSource,
+    interSilverSource: settings.interSilverSource,
+    interGoldFetchedAt: settings.interGoldFetchedAt,
+    interSilverFetchedAt: settings.interSilverFetchedAt,
+    interFetchStatus: settings.interFetchStatus,
+    interFetchError: settings.interFetchError,
+  };
+  const interGoldHint = buildInterMetalHint('gold', settings.interGold, interMeta, lastSyncAt);
+  const interSilverHint = buildInterMetalHint('silver', settings.interSilver, interMeta, lastSyncAt);
 
   const {
     form,
@@ -94,6 +110,8 @@ export default function NewValuationScreen() {
           suggestedMaquila={suggestedMaquila}
           suggestedRcGold={suggestedRcGold}
           onMaquilaEdit={onMaquilaManualEdit}
+          interGoldHint={interGoldHint}
+          interSilverHint={interSilverHint}
         />
         <ValuationResultsPanel result={result} scenario={activeScenario} />
 

@@ -97,6 +97,12 @@ const LIST_APP_SETTINGS = /* GraphQL */ `
         defaultRecPercentSilver
         defaultInterGold
         defaultInterSilver
+        interGoldSource
+        interSilverSource
+        interGoldFetchedAt
+        interSilverFetchedAt
+        interFetchStatus
+        interFetchError
         updatedAt
       }
     }
@@ -266,8 +272,10 @@ async function persistPayload(payload: SyncCloudPayload): Promise<void> {
     await db.run(
       `INSERT INTO app_settings (
         id, factor, default_consumos, default_flete, default_rc_gold, default_rc_silver, default_rec_percent_gold,
-        default_rec_percent_silver, default_inter_gold, default_inter_silver, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        default_rec_percent_silver, default_inter_gold, default_inter_silver,
+        inter_gold_source, inter_silver_source, inter_gold_fetched_at, inter_silver_fetched_at,
+        inter_fetch_status, inter_fetch_error, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         'default',
         appSettings.factor,
@@ -279,6 +287,12 @@ async function persistPayload(payload: SyncCloudPayload): Promise<void> {
         appSettings.defaultRecPercentSilver ?? null,
         appSettings.defaultInterGold ?? null,
         appSettings.defaultInterSilver ?? null,
+        appSettings.interGoldSource ?? null,
+        appSettings.interSilverSource ?? null,
+        appSettings.interGoldFetchedAt ?? null,
+        appSettings.interSilverFetchedAt ?? null,
+        appSettings.interFetchStatus ?? null,
+        appSettings.interFetchError ?? null,
         appSettings.updatedAt ?? new Date().toISOString(),
       ]
     );

@@ -50,5 +50,11 @@ export interface AppSettings {
   defaultRecPercentSilver?: string | null;
   defaultInterGold?: string | null;
   defaultInterSilver?: string | null;
+  interGoldSource?: string | null;
+  interSilverSource?: string | null;
+  interGoldFetchedAt?: string | null;
+  interSilverFetchedAt?: string | null;
+  interFetchStatus?: string | null;
+  interFetchError?: string | null;
   updatedAt: string;
 }

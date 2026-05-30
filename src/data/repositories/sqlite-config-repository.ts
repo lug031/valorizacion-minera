@@ -23,6 +23,12 @@ interface AppSettingsRow {
   default_rec_percent_silver: string | null;
   default_inter_gold: string | null;
   default_inter_silver: string | null;
+  inter_gold_source: string | null;
+  inter_silver_source: string | null;
+  inter_gold_fetched_at: string | null;
+  inter_silver_fetched_at: string | null;
+  inter_fetch_status: string | null;
+  inter_fetch_error: string | null;
   updated_at: string;
 }
 
@@ -38,6 +44,12 @@ function mapSettings(row: AppSettingsRow): AppSettings {
     defaultRecPercentSilver: row.default_rec_percent_silver,
     defaultInterGold: row.default_inter_gold,
     defaultInterSilver: row.default_inter_silver,
+    interGoldSource: row.inter_gold_source,
+    interSilverSource: row.inter_silver_source,
+    interGoldFetchedAt: row.inter_gold_fetched_at,
+    interSilverFetchedAt: row.inter_silver_fetched_at,
+    interFetchStatus: row.inter_fetch_status,
+    interFetchError: row.inter_fetch_error,
     updatedAt: row.updated_at,
   };
 }
@@ -146,8 +158,10 @@ export function createSqliteConfigRepository(getDb: () => Promise<SqlExecutor>):
       await db.run(
         `INSERT OR REPLACE INTO app_settings (
           id, factor, default_consumos, default_flete, default_rc_gold, default_rc_silver,
-          default_rec_percent_gold, default_rec_percent_silver, default_inter_gold, default_inter_silver, updated_at
-        ) VALUES ('default', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          default_rec_percent_gold, default_rec_percent_silver, default_inter_gold, default_inter_silver,
+          inter_gold_source, inter_silver_source, inter_gold_fetched_at, inter_silver_fetched_at,
+          inter_fetch_status, inter_fetch_error, updated_at
+        ) VALUES ('default', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           settings.factor,
           settings.defaultConsumos ?? null,
@@ -158,6 +172,12 @@ export function createSqliteConfigRepository(getDb: () => Promise<SqlExecutor>):
           settings.defaultRecPercentSilver ?? null,
           settings.defaultInterGold ?? null,
           settings.defaultInterSilver ?? null,
+          settings.interGoldSource ?? null,
+          settings.interSilverSource ?? null,
+          settings.interGoldFetchedAt ?? null,
+          settings.interSilverFetchedAt ?? null,
+          settings.interFetchStatus ?? null,
+          settings.interFetchError ?? null,
           settings.updatedAt,
         ]
       );
