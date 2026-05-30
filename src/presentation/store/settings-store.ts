@@ -77,6 +77,23 @@ function appSettingsToDefaults(s: AppSettings): SettingsDefaults {
   };
 }
 
+function buildReferenceAppSettings(): AppSettings {
+  return {
+    id: 'default',
+    factor: FALLBACK.factor,
+    defaultConsumos: FALLBACK.consumos,
+    defaultFlete: FALLBACK.flete,
+    defaultRcGold: FALLBACK.rcGold,
+    defaultRcSilver: FALLBACK.rcSilver,
+    defaultRecPercentGold: FALLBACK.recPercentGold,
+    defaultRecPercentSilver: FALLBACK.recPercentSilver,
+    defaultInterGold: FALLBACK.interGold,
+    defaultInterSilver: FALLBACK.interSilver,
+    ...EMPTY_INTER_META,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 function buildAppSettings(
   defaults: SettingsDefaults,
   interMeta: InterSyncMetadata,
@@ -170,25 +187,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   reset: async () => {
+    const payload = buildReferenceAppSettings();
     set({ ...FALLBACK, ...EMPTY_INTER_META });
-    await configRepository.saveAppSettings({
-      id: 'default',
-      factor: FALLBACK.factor,
-      defaultConsumos: FALLBACK.consumos,
-      defaultFlete: FALLBACK.flete,
-      defaultRcGold: FALLBACK.rcGold,
-      defaultRcSilver: FALLBACK.rcSilver,
-      defaultRecPercentGold: FALLBACK.recPercentGold,
-      defaultRecPercentSilver: FALLBACK.recPercentSilver,
-      defaultInterGold: FALLBACK.interGold,
-      defaultInterSilver: FALLBACK.interSilver,
-      interGoldSource: 'reference',
-      interSilverSource: 'reference',
-      interGoldFetchedAt: null,
-      interSilverFetchedAt: null,
-      interFetchStatus: null,
-      interFetchError: null,
-      updatedAt: new Date().toISOString(),
-    });
+    await configRepository.saveAppSettings(payload);
   },
 }));

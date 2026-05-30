@@ -8,6 +8,7 @@ import { canManageSettings } from '../../src/presentation/utils/role-access';
 import { FormNumberField } from '../../src/presentation/components/ui/FormNumberField';
 import { InterMetadataSummary } from '../../src/presentation/components/settings/InterMetadataSummary';
 import { useSyncStore } from '../../src/presentation/store/sync-store';
+import { hasValidInterSyncMetadata } from '../../src/presentation/utils/inter-sync-hint';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { configFormSchema, type ConfigFormValues } from '../../src/presentation/forms/config-form-schema';
@@ -19,6 +20,16 @@ export default function ConfiguracionScreen() {
   const setDefaults = useSettingsStore((s) => s.setDefaults);
   const reset = useSettingsStore((s) => s.reset);
   const lastSyncAt = useSyncStore((s) => s.metadata?.lastSyncAt ?? null);
+
+  const interMeta = {
+    interGoldSource: settings.interGoldSource,
+    interSilverSource: settings.interSilverSource,
+    interGoldFetchedAt: settings.interGoldFetchedAt,
+    interSilverFetchedAt: settings.interSilverFetchedAt,
+    interFetchStatus: settings.interFetchStatus,
+    interFetchError: settings.interFetchError,
+  };
+  const showInterSyncReference = hasValidInterSyncMetadata(interMeta);
 
   useEffect(() => {
     if (!canManageSettings(user?.role)) {
@@ -80,24 +91,19 @@ export default function ConfiguracionScreen() {
         <FormNumberField control={control} name="flete" label="Flete (US$/TMS)" />
         <FormNumberField control={control} name="interGold" label="INTER oro (US$/oz)" />
         <FormNumberField control={control} name="interSilver" label="INTER plata (US$/oz)" />
-        <View style={styles.interMeta}>
-          <Text variant="labelMedium" style={styles.interMetaTitle}>
-            Referencia sincronizada (solo lectura)
-          </Text>
-          <InterMetadataSummary
-            interGold={settings.interGold}
-            interSilver={settings.interSilver}
-            meta={{
-              interGoldSource: settings.interGoldSource,
-              interSilverSource: settings.interSilverSource,
-              interGoldFetchedAt: settings.interGoldFetchedAt,
-              interSilverFetchedAt: settings.interSilverFetchedAt,
-              interFetchStatus: settings.interFetchStatus,
-              interFetchError: settings.interFetchError,
-            }}
-            lastSyncAt={lastSyncAt}
-          />
-        </View>
+        {showInterSyncReference ? (
+          <View style={styles.interMeta}>
+            <Text variant="labelMedium" style={styles.interMetaTitle}>
+              Referencia sincronizada (solo lectura)
+            </Text>
+            <InterMetadataSummary
+              interGold={settings.interGold}
+              interSilver={settings.interSilver}
+              meta={interMeta}
+              lastSyncAt={lastSyncAt}
+            />
+          </View>
+        ) : null}
         <Button mode="contained" onPress={onSave} style={styles.btn} contentStyle={styles.btnContent}>
           Guardar valores iniciales
         </Button>

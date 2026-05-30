@@ -4,7 +4,7 @@ import { INTER_SOURCE_LABELS } from '../../../domain/constants/inter-metadata';
 import type { InterSyncMetadata } from '../../store/settings-store';
 import {
   buildInterFetchStatusHint,
-  buildInterMetalHint,
+  hasValidInterSyncMetadata,
 } from '../../utils/inter-sync-hint';
 
 function formatTimestamp(iso: string | null | undefined): string {
@@ -29,18 +29,27 @@ interface Props {
   compact?: boolean;
 }
 
+function InterMetadataEmptyState({ compact }: { compact?: boolean }) {
+  return (
+    <View style={styles.wrap}>
+      <Text style={styles.detail}>Fuente: Sin registrar</Text>
+      <Text style={styles.detail}>Obtenido: —</Text>
+      <Text style={styles.detail}>Estado: Sin sincronización previa</Text>
+      {!compact ? (
+        <Text style={[styles.detail, styles.rowGap]}>
+          Los valores del formulario son locales o del cotizador, no una referencia sincronizada.
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
 /** Resumen de metadata INTER maestra (config / sync). */
 export function InterMetadataSummary({ interGold, interSilver, meta, lastSyncAt, compact }: Props) {
-  const goldHint = buildInterMetalHint('gold', interGold, meta, lastSyncAt);
-  const silverHint = buildInterMetalHint('silver', interSilver, meta, lastSyncAt);
   const fetchWarning = buildInterFetchStatusHint(meta);
 
-  if (!goldHint && !silverHint && !fetchWarning && compact) {
-    return (
-      <Text variant="bodySmall" style={styles.muted}>
-        Sin sincronización de INTER registrada. Se usan valores locales o de referencia.
-      </Text>
-    );
+  if (!hasValidInterSyncMetadata(meta)) {
+    return <InterMetadataEmptyState compact={compact} />;
   }
 
   return (
@@ -91,7 +100,6 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, color: '#475569' },
   value: { fontSize: 13, fontWeight: '600', color: '#1e293b' },
   detail: { fontSize: 11, color: '#94a3b8', lineHeight: 15 },
-  muted: { opacity: 0.75, lineHeight: 18 },
   warning: {
     marginTop: 8,
     fontSize: 12,
