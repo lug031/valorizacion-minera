@@ -1,11 +1,11 @@
 import { View, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
-import { INTER_SOURCE_LABELS } from '../../domain/constants/inter-metadata';
-import type { InterSyncMetadata } from '../store/settings-store';
+import { INTER_SOURCE_LABELS } from '../../../domain/constants/inter-metadata';
+import type { InterSyncMetadata } from '../../store/settings-store';
 import {
   buildInterFetchStatusHint,
   buildInterMetalHint,
-} from '../utils/inter-sync-hint';
+} from '../../utils/inter-sync-hint';
 
 function formatTimestamp(iso: string | null | undefined): string {
   if (!iso?.trim()) return '—';
