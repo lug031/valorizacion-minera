@@ -6,6 +6,11 @@ import { screenPadding } from '../theme/app-theme';
 import { useSyncStore } from '../store/sync-store';
 import { useSettingsStore } from '../store/settings-store';
 import { InterMetadataSummary } from '../components/settings/InterMetadataSummary';
+import {
+  buildSyncRecordRows,
+  syncRecordsCardSubtitle,
+  syncRecordsCardTitle,
+} from '../utils/sync-records-display';
 
 function formatTimestamp(value: string | null): string {
   if (!value) return 'Aún no sincronizado';
@@ -38,6 +43,7 @@ export function SyncConfigScreen() {
   const hydrate = useSyncStore((s) => s.hydrate);
   const syncNow = useSyncStore((s) => s.syncNow);
   const settings = useSettingsStore();
+  const recordRows = buildSyncRecordRows(metadata);
 
   useEffect(() => {
     void hydrate();
@@ -90,29 +96,19 @@ export function SyncConfigScreen() {
 
         <Card style={styles.card}>
           <Card.Content>
-            <Text variant="titleMedium">
-              {metadata?.status === 'success' ? 'Registros aplicados' : 'Registros recibidos de la nube'}
+            <Text variant="titleMedium">{syncRecordsCardTitle(metadata?.status)}</Text>
+            <Text variant="bodySmall" style={styles.cardSubtitle}>
+              {syncRecordsCardSubtitle(metadata?.status)}
             </Text>
-            <View style={styles.row}>
-              <Text>MaterialType</Text>
-              <Text>{metadata?.recordsMaterialTypes ?? 0}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text>MaquilaRange</Text>
-              <Text>{metadata?.recordsMaquilaRanges ?? 0}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text>Provider</Text>
-              <Text>{metadata?.recordsProviders ?? 0}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text>ProviderDefaults</Text>
-              <Text>{metadata?.recordsProviderDefaults ?? 0}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text>AppSettings</Text>
-              <Text>{metadata?.recordsAppSettings ?? 0}</Text>
-            </View>
+            {recordRows.map((row) => (
+              <View key={row.label} style={styles.recordBlock}>
+                <View style={styles.row}>
+                  <Text style={styles.rowLabel}>{row.label}</Text>
+                  <Text style={styles.rowValue}>{row.value}</Text>
+                </View>
+                {row.hint ? <Text style={styles.rowHint}>{row.hint}</Text> : null}
+              </View>
+            ))}
           </Card.Content>
         </Card>
 
@@ -157,6 +153,7 @@ const styles = StyleSheet.create({
   container: { padding: screenPadding, paddingBottom: 40, gap: 12 },
   hint: { opacity: 0.75, marginBottom: 4 },
   card: { borderRadius: 12 },
+  cardSubtitle: { marginTop: 4, marginBottom: 4, opacity: 0.7, lineHeight: 18 },
   label: { marginTop: 8, opacity: 0.7 },
   value: { marginTop: 2, fontWeight: '600' },
   valueSmall: { marginTop: 2, fontSize: 12, opacity: 0.85 },
@@ -164,10 +161,15 @@ const styles = StyleSheet.create({
   issuesBox: { marginTop: 10, gap: 4 },
   issueItem: { color: '#b42318', fontSize: 13 },
   preserveHint: { marginTop: 6, fontSize: 12, opacity: 0.75 },
+  recordBlock: { marginTop: 8 },
   row: {
-    marginTop: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
   },
+  rowLabel: { flex: 1, fontSize: 14 },
+  rowValue: { fontWeight: '600', fontSize: 14, minWidth: 24, textAlign: 'right' },
+  rowHint: { marginTop: 2, fontSize: 11, opacity: 0.65, lineHeight: 15 },
   btnContent: { paddingVertical: 10 },
 });

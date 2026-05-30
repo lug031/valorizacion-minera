@@ -9,6 +9,7 @@ import { FormNumberField } from '../../src/presentation/components/ui/FormNumber
 import { InterMetadataSummary } from '../../src/presentation/components/settings/InterMetadataSummary';
 import { useSyncStore } from '../../src/presentation/store/sync-store';
 import { hasValidInterSyncMetadata } from '../../src/presentation/utils/inter-sync-hint';
+import { settingsToConfigFormValues } from '../../src/presentation/utils/settings-form-values';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { configFormSchema, type ConfigFormValues } from '../../src/presentation/forms/config-form-schema';
@@ -18,7 +19,7 @@ export default function ConfiguracionScreen() {
   const user = useAuthStore((s) => s.user);
   const settings = useSettingsStore();
   const setDefaults = useSettingsStore((s) => s.setDefaults);
-  const reset = useSettingsStore((s) => s.reset);
+  const resetSettings = useSettingsStore((s) => s.reset);
   const lastSyncAt = useSyncStore((s) => s.metadata?.lastSyncAt ?? null);
 
   const interMeta = {
@@ -38,26 +39,21 @@ export default function ConfiguracionScreen() {
     void useSyncStore.getState().hydrate();
   }, [user?.role]);
 
-  const { control, handleSubmit } = useForm<ConfigFormValues>({
+  const { control, handleSubmit, reset: resetForm } = useForm<ConfigFormValues>({
     resolver: zodResolver(configFormSchema),
     mode: 'onChange',
-    defaultValues: {
-      factor: settings.factor,
-      recPercentGold: settings.recPercentGold,
-      recPercentSilver: settings.recPercentSilver,
-      rcGold: settings.rcGold,
-      rcSilver: settings.rcSilver,
-      consumos: settings.consumos,
-      flete: settings.flete,
-      interGold: settings.interGold,
-      interSilver: settings.interSilver,
-    },
+    defaultValues: settingsToConfigFormValues(settings),
   });
 
   const onSave = handleSubmit(async (values) => {
     await setDefaults(values);
     router.back();
   });
+
+  const onRestore = async () => {
+    await resetSettings();
+    resetForm(settingsToConfigFormValues(useSettingsStore.getState()));
+  };
 
   if (!canManageSettings(user?.role)) {
     return (
@@ -94,7 +90,7 @@ export default function ConfiguracionScreen() {
         {showInterSyncReference ? (
           <View style={styles.interMeta}>
             <Text variant="labelMedium" style={styles.interMetaTitle}>
-              Referencia sincronizada (solo lectura)
+              Referencia sincronizada
             </Text>
             <InterMetadataSummary
               interGold={settings.interGold}
@@ -107,7 +103,7 @@ export default function ConfiguracionScreen() {
         <Button mode="contained" onPress={onSave} style={styles.btn} contentStyle={styles.btnContent}>
           Guardar valores iniciales
         </Button>
-        <Button mode="outlined" onPress={() => void reset()} style={styles.btn}>
+        <Button mode="outlined" onPress={() => void onRestore()} style={styles.btn}>
           Restaurar valores del cotizador
         </Button>
         <Button mode="text" onPress={() => router.back()}>

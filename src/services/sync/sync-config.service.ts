@@ -172,6 +172,10 @@ async function fetchCloudConfig(): Promise<SyncCloudPayload> {
   return syncCloudPayloadSchema.parse(payload);
 }
 
+function countAppliedAppSettings(payload: SyncCloudPayload): number {
+  return payload.appSettings.some((row) => row.settingsKey === 'default') ? 1 : 0;
+}
+
 function buildMetadata(
   payload: SyncCloudPayload,
   status: SyncStatus,
@@ -196,7 +200,7 @@ function buildMetadata(
     recordsMaquilaRanges: payload.maquilaRanges.length,
     recordsProviders: payload.providers.length,
     recordsProviderDefaults: payload.providerDefaults.length,
-    recordsAppSettings: payload.appSettings.length,
+    recordsAppSettings: countAppliedAppSettings(payload),
     maxUpdatedAtMaterialTypes: maxUpdatedAt(payload.materialTypes),
     maxUpdatedAtMaquilaRanges: maxUpdatedAt(payload.maquilaRanges),
     maxUpdatedAtProviders: maxUpdatedAt(payload.providers),
