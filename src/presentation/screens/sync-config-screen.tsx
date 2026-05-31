@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Text } from 'react-native-paper';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { screenPadding } from '../theme/app-theme';
+import { useAuthStore } from '../store/auth-store';
 import { useSyncStore } from '../store/sync-store';
 import { useSettingsStore } from '../store/settings-store';
+import { canSyncMasterConfig } from '../utils/role-access';
 import { InterMetadataSummary } from '../components/settings/InterMetadataSummary';
 import {
   buildSyncRecordRows,
@@ -37,6 +39,7 @@ function statusLabel(status?: string): string {
 }
 
 export function SyncConfigScreen() {
+  const user = useAuthStore((s) => s.user);
   const metadata = useSyncStore((s) => s.metadata);
   const loading = useSyncStore((s) => s.loading);
   const hydrating = useSyncStore((s) => s.hydrating);
@@ -46,8 +49,27 @@ export function SyncConfigScreen() {
   const recordRows = buildSyncRecordRows(metadata);
 
   useEffect(() => {
+    if (!canSyncMasterConfig(user?.role)) {
+      router.replace('/(app)/dashboard');
+    }
     void hydrate();
-  }, [hydrate]);
+  }, [hydrate, user?.role]);
+
+  if (!canSyncMasterConfig(user?.role)) {
+    return (
+      <View style={styles.denied}>
+        <Text variant="bodyLarge" style={styles.deniedText}>
+          No tiene permiso para sincronizar configuración maestra.
+        </Text>
+        <Text variant="bodyMedium" style={styles.deniedSub}>
+          Esta acción está disponible solo para administradores.
+        </Text>
+        <Button mode="contained" onPress={() => router.replace('/(app)/dashboard')} style={{ marginTop: 16 }}>
+          Volver al inicio
+        </Button>
+      </View>
+    );
+  }
 
   return (
     <>
@@ -150,6 +172,9 @@ export function SyncConfigScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: screenPadding, paddingBottom: 40, gap: 12 },
+  denied: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  deniedText: { textAlign: 'center', fontWeight: '600' },
+  deniedSub: { textAlign: 'center', marginTop: 8, opacity: 0.75 },
   hint: { opacity: 0.75, marginBottom: 4 },
   card: { borderRadius: 12 },
   cardSubtitle: { marginTop: 4, marginBottom: 4, opacity: 0.7, lineHeight: 18 },

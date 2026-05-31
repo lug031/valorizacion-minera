@@ -1,4 +1,4 @@
-import type { UserRole } from './enums';
+import type { AuthSource, UserRole } from './enums';
 
 export interface User {
   id: string;
@@ -7,6 +7,10 @@ export interface User {
   role: UserRole;
   isActive: boolean;
   displayName: string | null;
+  /** Cognito sub o id cloud cuando el usuario esté provisionado (fase posterior). */
+  cloudUserId: string | null;
+  authSource: AuthSource;
+  provisionedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

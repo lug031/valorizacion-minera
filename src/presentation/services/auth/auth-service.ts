@@ -1,13 +1,10 @@
-import type { UserRole } from '../../../domain/models/enums';
+import type { AppActor } from '../../../domain/models/app-actor';
+import { userToAppActor } from '../../../domain/identity/app-actor-mapper';
 import { userRepository } from '../../../data/repositories';
 import { saveSessionToken, getSessionToken, clearSessionToken } from './session-storage';
 
-export interface AuthUser {
-  id: string;
-  username: string;
-  role: UserRole;
-  displayName: string;
-}
+/** Sesión operativa local (alias de AppActor para compatibilidad). */
+export type AuthUser = AppActor;
 
 function makeToken(userId: string): string {
   return `mock-${userId}-${Date.now()}`;
@@ -27,12 +24,7 @@ export async function loginLocal(
   const user = await userRepository.verifyCredentials(username, password);
   if (!user) return null;
 
-  const authUser: AuthUser = {
-    id: user.id,
-    username: user.username,
-    role: user.role,
-    displayName: user.displayName ?? user.username,
-  };
+  const authUser = userToAppActor(user);
 
   const token = makeToken(user.id);
   await saveSessionToken(token);
@@ -70,10 +62,5 @@ export async function restoreSession(): Promise<AuthUser | null> {
   const user = await userRepository.findById(userId);
   if (!user || !user.isActive) return null;
 
-  return {
-    id: user.id,
-    username: user.username,
-    role: user.role,
-    displayName: user.displayName ?? user.username,
-  };
+  return userToAppActor(user);
 }

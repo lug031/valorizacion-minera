@@ -126,4 +126,27 @@ export async function runMigrations(db: SqlExecutor): Promise<void> {
       );
     });
   }
+
+  if (currentVersion < 6) {
+    await db.withTransaction(async () => {
+      await addColumnIfMissing(db, 'users', 'cloud_user_id', 'TEXT');
+      await addColumnIfMissing(
+        db,
+        'users',
+        'auth_mode',
+        "TEXT NOT NULL DEFAULT 'local_seed'"
+      );
+      await addColumnIfMissing(db, 'users', 'provisioned_at', 'TEXT');
+
+      await db.run(
+        `UPDATE users SET auth_mode = 'local_seed'
+         WHERE auth_mode IS NULL OR trim(auth_mode) = ''`
+      );
+
+      await db.run(
+        `INSERT OR REPLACE INTO schema_migrations (version, applied_at) VALUES (?, datetime('now'))`,
+        [6]
+      );
+    });
+  }
 }

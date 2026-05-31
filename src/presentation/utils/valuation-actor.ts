@@ -1,10 +1,7 @@
+import type { AppActor } from '../../domain/models/app-actor';
 import type { ValuationActor } from '../../domain/models/valuation-actor';
-import type { AuthUser } from '../services/auth/auth-service';
+import { appActorToValuationActor } from '../../domain/identity/app-actor-mapper';
 
-export function authUserToValuationActor(user: AuthUser): ValuationActor {
-  return {
-    id: user.id,
-    username: user.username,
-    role: user.role,
-  };
+export function authUserToValuationActor(user: AppActor): ValuationActor {
+  return appActorToValuationActor(user);
 }

@@ -5,6 +5,10 @@ import { configureAmplify } from './configure-amplify';
 
 let client: { graphql: (input: { query: string }) => Promise<unknown> } | null = null;
 
+/**
+ * Autentica la identidad técnica de sync (no el operador de campo).
+ * Prioriza sesión Cognito existente; si no hay, usa EXPO_PUBLIC_SYNC_USERNAME/PASSWORD.
+ */
 export async function ensureSyncIdentity(): Promise<void> {
   configureAmplify();
   try {

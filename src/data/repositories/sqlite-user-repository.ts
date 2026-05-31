@@ -1,5 +1,6 @@
 import type { User } from '../../domain/models/user';
 import type { SqlExecutor } from '../db/sql-executor';
+import { resolveAuthSource } from '../../domain/identity/app-actor-mapper';
 import { verifyPassword } from '../security/password-hash';
 
 export interface UserRepository {
@@ -15,6 +16,9 @@ interface UserRow {
   role: string;
   is_active: number;
   display_name: string | null;
+  cloud_user_id: string | null;
+  auth_mode: string | null;
+  provisioned_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -27,6 +31,9 @@ function mapRow(row: UserRow): User {
     role: row.role as User['role'],
     isActive: row.is_active === 1,
     displayName: row.display_name,
+    cloudUserId: row.cloud_user_id,
+    authSource: resolveAuthSource(row.auth_mode),
+    provisionedAt: row.provisioned_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

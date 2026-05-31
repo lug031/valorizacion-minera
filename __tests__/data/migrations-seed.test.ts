@@ -47,6 +47,24 @@ describe('migrations and seed', () => {
     expect(settings?.defaultConsumos).toBe(COTIZADOR_DEFAULTS.consumos);
   });
 
+  it('migración v6 agrega columnas de identidad en users', async () => {
+    const version = await db.getFirst<{ version: number }>(
+      'SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1'
+    );
+    expect(version?.version).toBeGreaterThanOrEqual(6);
+
+    const columns = await db.getAll<{ name: string }>('PRAGMA table_info(users)');
+    const names = columns.map((c) => c.name);
+    expect(names).toContain('cloud_user_id');
+    expect(names).toContain('auth_mode');
+    expect(names).toContain('provisioned_at');
+
+    const users = createSqliteUserRepository(getDb);
+    const admin = await users.findByUsername('admin');
+    expect(admin?.authSource).toBe('local_seed');
+    expect(admin?.cloudUserId).toBeNull();
+  });
+
   it('migración v5 agrega columnas metadata INTER en app_settings', async () => {
     const version = await db.getFirst<{ version: number }>(
       'SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1'

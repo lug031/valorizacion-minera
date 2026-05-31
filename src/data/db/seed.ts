@@ -38,8 +38,11 @@ async function seedUsers(db: SqlExecutor): Promise<void> {
 
     const ts = NOW();
     await db.run(
-      `INSERT INTO users (id, username, password_hash, role, is_active, display_name, created_at, updated_at)
-       VALUES (?, ?, ?, ?, 1, ?, ?, ?)`,
+      `INSERT INTO users (
+         id, username, password_hash, role, is_active, display_name,
+         cloud_user_id, auth_mode, provisioned_at, created_at, updated_at
+       )
+       VALUES (?, ?, ?, ?, 1, ?, NULL, 'local_seed', NULL, ?, ?)`,
       [u.id, u.username, await hashPassword(u.password), u.role, u.displayName, ts, ts]
     );
   }

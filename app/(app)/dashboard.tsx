@@ -7,7 +7,7 @@ import { useSettingsStore } from '../../src/presentation/store/settings-store';
 import { useValuationDraftStore } from '../../src/presentation/store/valuation-draft-store';
 import { ScreenHeader } from '../../src/presentation/components/ui/ScreenHeader';
 import { screenPadding } from '../../src/presentation/theme/app-theme';
-import { canManageSettings } from '../../src/presentation/utils/role-access';
+import { canManageSettings, canSyncMasterConfig } from '../../src/presentation/utils/role-access';
 import { canUseScenarioComparison } from '../../src/config/scenario-comparison-access';
 
 export default function DashboardScreen() {
@@ -16,6 +16,7 @@ export default function DashboardScreen() {
   const settings = useSettingsStore();
   const initDraft = useValuationDraftStore((s) => s.initDraft);
   const isAdmin = canManageSettings(user?.role);
+  const canSync = canSyncMasterConfig(user?.role);
   const comparisonProductEnabled = canUseScenarioComparison();
 
   const startNew = () => {
@@ -80,14 +81,16 @@ export default function DashboardScreen() {
             Configuración
           </Button>
         ) : null}
-        <Button
-          mode="outlined"
-          onPress={() => router.push('/(app)/sincronizar-configuracion')}
-          style={styles.btn}
-          contentStyle={styles.btnContent}
-        >
-          Sincronizar configuración
-        </Button>
+        {canSync ? (
+          <Button
+            mode="outlined"
+            onPress={() => router.push('/(app)/sincronizar-configuracion')}
+            style={styles.btn}
+            contentStyle={styles.btnContent}
+          >
+            Sincronizar configuración
+          </Button>
+        ) : null}
         <Button mode="text" onPress={async () => { await logout(); router.replace('/(auth)/login'); }} style={{ marginTop: 24 }}>
           Cerrar sesión
         </Button>

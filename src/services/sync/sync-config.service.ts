@@ -1,6 +1,11 @@
 import { getSqlExecutor } from '../../data/db/database';
 import { sqliteSyncMetadataRepository } from '../../data/repositories/sqlite-sync-metadata-repository';
-import { ensureSyncIdentity, getMobileDataClient } from '../../infrastructure/amplify/mobile-data-client';
+import type { AppActor } from '../../domain/models/app-actor';
+import {
+  canSyncMasterConfig,
+  SYNC_ACCESS_DENIED_MESSAGE,
+} from '../../domain/identity/sync-access';
+import { ensureSyncIdentity, getMobileDataClient } from '../../infrastructure/amplify/sync-identity';
 import { assertPublishedConfigBundle, BundleValidationError } from './sync-config-bundle';
 import { syncCloudPayloadSchema, type SyncCloudPayload } from './sync-config.schemas';
 import type { SyncConfigResult, SyncMetadata, SyncStatus } from './sync-config.types';
@@ -307,7 +312,11 @@ export async function getSyncMetadata(): Promise<SyncMetadata> {
   return sqliteSyncMetadataRepository.getConfigMetadata();
 }
 
-export async function syncMasterConfig(): Promise<SyncConfigResult> {
+export async function syncMasterConfig(actor: AppActor): Promise<SyncConfigResult> {
+  if (!canSyncMasterConfig(actor.role)) {
+    throw new Error(SYNC_ACCESS_DENIED_MESSAGE);
+  }
+
   const previous = await sqliteSyncMetadataRepository.getConfigMetadata();
   await sqliteSyncMetadataRepository.saveConfigMetadata({
     ...previous,
