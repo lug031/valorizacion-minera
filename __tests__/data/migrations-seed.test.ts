@@ -47,6 +47,23 @@ describe('migrations and seed', () => {
     expect(settings?.defaultConsumos).toBe(COTIZADOR_DEFAULTS.consumos);
   });
 
+  it('migración v7 agrega columnas de device binding en devices', async () => {
+    const version = await db.getFirst<{ version: number }>(
+      'SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1'
+    );
+    expect(version?.version).toBeGreaterThanOrEqual(7);
+
+    const columns = await db.getAll<{ name: string }>('PRAGMA table_info(devices)');
+    const names = columns.map((c) => c.name);
+    expect(names).toContain('cloud_device_id');
+    expect(names).toContain('last_sync_at');
+    expect(names).toContain('platform');
+    expect(names).toContain('app_version');
+    expect(names).toContain('enrollment_status');
+    expect(names).toContain('notes');
+    expect(names).toContain('metadata_json');
+  });
+
   it('migración v6 agrega columnas de identidad en users', async () => {
     const version = await db.getFirst<{ version: number }>(
       'SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1'

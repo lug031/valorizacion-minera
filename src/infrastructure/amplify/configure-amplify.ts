@@ -1,5 +1,5 @@
 import { Amplify } from 'aws-amplify';
-import { requirePublicEnv } from '../../config/runtime-env';
+import { requirePublicEnv, readPublicEnv } from '../../config/runtime-env';
 
 let configured = false;
 
@@ -19,6 +19,7 @@ export function configureAmplify(): void {
     'EXPO_PUBLIC_AWS_USER_POOL_CLIENT_ID',
     'EXPO_PUBLIC_USER_POOL_CLIENT_ID'
   );
+  const apiKey = readPublicEnv('EXPO_PUBLIC_AWS_APPSYNC_API_KEY', 'EXPO_PUBLIC_APPSYNC_API_KEY');
 
   Amplify.configure({
     API: {
@@ -26,6 +27,7 @@ export function configureAmplify(): void {
         endpoint,
         region,
         defaultAuthMode: 'userPool',
+        ...(apiKey ? { apiKey } : {}),
       },
     },
     Auth: {

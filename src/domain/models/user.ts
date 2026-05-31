@@ -19,9 +19,16 @@ export interface DeviceRegistration {
   id: string;
   userId: string;
   deviceFingerprint: string;
+  cloudDeviceId: string | null;
   validUntil: string | null;
   isBlocked: boolean;
   registeredAt: string;
+  lastSyncAt: string | null;
+  platform: string | null;
+  appVersion: string | null;
+  enrollmentStatus: 'local' | 'pending' | 'enrolled' | 'revoked';
+  notes: string | null;
+  metadataJson: string | null;
 }
 
 export interface Session {

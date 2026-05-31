@@ -20,11 +20,23 @@ export interface SyncProvisionedUsersResult {
   skippedSeedConflicts: number;
 }
 
+export interface EnrolledFieldUserInput {
+  cloudUserId: string;
+  username: string;
+  displayName: string;
+  role: UserRole;
+  passwordHash: string;
+  provisionedAt: string;
+}
+
 export interface UserRepository {
   findByUsername(username: string): Promise<User | null>;
   findById(id: string): Promise<User | null>;
   verifyCredentials(username: string, password: string): Promise<User | null>;
   syncProvisionedUsers(users: ProvisionedFieldUserInput[]): Promise<SyncProvisionedUsersResult>;
+  applyEnrolledFieldUser(input: EnrolledFieldUserInput): Promise<User>;
+  finalizeEnrollmentCleanup(cloudUserId: string, role: UserRole): Promise<void>;
+  setActiveByCloudUserId(cloudUserId: string, isActive: boolean): Promise<void>;
 }
 
 interface UserRow {
@@ -190,6 +202,85 @@ export function createSqliteUserRepository(getDb: () => Promise<SqlExecutor>): U
         deactivated,
         skippedSeedConflicts,
       };
+    },
+
+    async applyEnrolledFieldUser(input) {
+      const db = await getDb();
+      const username = input.username.trim().toLowerCase();
+      const localId = localIdForCloudUser(input.cloudUserId);
+      const ts = input.provisionedAt;
+
+      await db.withTransaction(async () => {
+        const existing = await db.getFirst<UserRow>('SELECT * FROM users WHERE id = ?', [localId]);
+        if (existing) {
+          await db.run(
+            `UPDATE users SET
+               username = ?, password_hash = ?, role = ?, is_active = 1, display_name = ?,
+               cloud_user_id = ?, auth_mode = 'local_provisioned', provisioned_at = ?, updated_at = ?
+             WHERE id = ?`,
+            [
+              username,
+              input.passwordHash,
+              input.role,
+              input.displayName,
+              input.cloudUserId,
+              ts,
+              ts,
+              localId,
+            ]
+          );
+        } else {
+          await db.run(
+            `INSERT INTO users (
+               id, username, password_hash, role, is_active, display_name,
+               cloud_user_id, auth_mode, provisioned_at, created_at, updated_at
+             ) VALUES (?, ?, ?, ?, 1, ?, ?, 'local_provisioned', ?, ?, ?)`,
+            [
+              localId,
+              username,
+              input.passwordHash,
+              input.role,
+              input.displayName,
+              input.cloudUserId,
+              ts,
+              ts,
+              ts,
+            ]
+          );
+        }
+      });
+
+      const user = await this.findById(localId);
+      if (!user) throw new Error('No se pudo guardar el usuario enrollado');
+      return user;
+    },
+
+    async finalizeEnrollmentCleanup(cloudUserId, role) {
+      const db = await getDb();
+      await db.withTransaction(async () => {
+        await db.run(
+          `DELETE FROM users
+           WHERE auth_mode = 'local_provisioned'
+             AND cloud_user_id IS NOT NULL
+             AND cloud_user_id != ?`,
+          [cloudUserId]
+        );
+
+        if (role === 'operador') {
+          await db.run(
+            `DELETE FROM users
+             WHERE auth_mode = 'local_seed' AND role = 'operador'`
+          );
+        }
+      });
+    },
+
+    async setActiveByCloudUserId(cloudUserId, isActive) {
+      const db = await getDb();
+      await db.run(
+        `UPDATE users SET is_active = ?, updated_at = datetime('now') WHERE cloud_user_id = ?`,
+        [isActive ? 1 : 0, cloudUserId]
+      );
     },
   };
 }

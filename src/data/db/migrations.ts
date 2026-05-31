@@ -149,4 +149,31 @@ export async function runMigrations(db: SqlExecutor): Promise<void> {
       );
     });
   }
+
+  if (currentVersion < 7) {
+    await db.withTransaction(async () => {
+      await addColumnIfMissing(db, 'devices', 'cloud_device_id', 'TEXT');
+      await addColumnIfMissing(db, 'devices', 'last_sync_at', 'TEXT');
+      await addColumnIfMissing(db, 'devices', 'platform', 'TEXT');
+      await addColumnIfMissing(db, 'devices', 'app_version', 'TEXT');
+      await addColumnIfMissing(
+        db,
+        'devices',
+        'enrollment_status',
+        "TEXT NOT NULL DEFAULT 'local'"
+      );
+      await addColumnIfMissing(db, 'devices', 'notes', 'TEXT');
+      await addColumnIfMissing(db, 'devices', 'metadata_json', 'TEXT');
+
+      await db.run(
+        `UPDATE devices SET enrollment_status = 'local'
+         WHERE enrollment_status IS NULL OR trim(enrollment_status) = ''`
+      );
+
+      await db.run(
+        `INSERT OR REPLACE INTO schema_migrations (version, applied_at) VALUES (?, datetime('now'))`,
+        [7]
+      );
+    });
+  }
 }

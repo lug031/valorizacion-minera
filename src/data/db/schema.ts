@@ -4,7 +4,7 @@
  */
 
 export const DB_NAME = 'valorizacion_minera.db';
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 export const CREATE_TABLES_SQL: readonly string[] = [
   `CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -39,9 +39,16 @@ export const CREATE_TABLES_SQL: readonly string[] = [
     id TEXT PRIMARY KEY NOT NULL,
     user_id TEXT NOT NULL REFERENCES users(id),
     device_fingerprint TEXT NOT NULL,
+    cloud_device_id TEXT,
     valid_until TEXT,
     is_blocked INTEGER NOT NULL DEFAULT 0,
     registered_at TEXT NOT NULL,
+    last_sync_at TEXT,
+    platform TEXT,
+    app_version TEXT,
+    enrollment_status TEXT NOT NULL DEFAULT 'local' CHECK (enrollment_status IN ('local', 'pending', 'enrolled', 'revoked')),
+    notes TEXT,
+    metadata_json TEXT,
     UNIQUE(user_id, device_fingerprint)
   );`,
 
