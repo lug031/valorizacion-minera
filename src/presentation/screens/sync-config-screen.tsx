@@ -45,6 +45,9 @@ export function SyncConfigScreen() {
   const hydrating = useSyncStore((s) => s.hydrating);
   const hydrate = useSyncStore((s) => s.hydrate);
   const syncNow = useSyncStore((s) => s.syncNow);
+  const fieldUsersSync = useSyncStore((s) => s.fieldUsersSync);
+  const fieldUsersLoading = useSyncStore((s) => s.fieldUsersLoading);
+  const syncFieldUsersNow = useSyncStore((s) => s.syncFieldUsersNow);
   const settings = useSettingsStore();
   const recordRows = buildSyncRecordRows(metadata);
 
@@ -156,14 +159,53 @@ export function SyncConfigScreen() {
           </Card.Content>
         </Card>
 
+        <Card style={styles.card}>
+          <Card.Content>
+            <Text variant="titleMedium">Usuarios de campo</Text>
+            <Text variant="bodySmall" style={styles.label}>
+              Descarga operadores administrados en la web para login offline en SQLite.
+            </Text>
+            {fieldUsersSync?.lastSyncAt ? (
+              <>
+                <Text variant="bodySmall" style={styles.label}>
+                  Última sincronización de usuarios
+                </Text>
+                <Text style={styles.value}>{formatTimestamp(fieldUsersSync.lastSyncAt)}</Text>
+                <Text variant="bodySmall" style={styles.label}>
+                  Resultado
+                </Text>
+                <Text style={styles.valueSmall}>
+                  {fieldUsersSync.upserted} actualizados
+                  {fieldUsersSync.deactivated > 0 ? ` · ${fieldUsersSync.deactivated} desactivados` : ''}
+                  {fieldUsersSync.skippedSeedConflicts > 0
+                    ? ` · ${fieldUsersSync.skippedSeedConflicts} omitidos (conflicto con seed local)`
+                    : ''}
+                </Text>
+              </>
+            ) : null}
+            {fieldUsersSync?.errorMessage ? (
+              <Text style={styles.error}>{fieldUsersSync.errorMessage}</Text>
+            ) : null}
+          </Card.Content>
+        </Card>
+
         <Button
           mode="contained"
           loading={loading}
-          disabled={loading || hydrating}
+          disabled={loading || hydrating || fieldUsersLoading}
           onPress={() => void syncNow()}
           contentStyle={styles.btnContent}
         >
-          Sincronizar ahora
+          Sincronizar configuración
+        </Button>
+        <Button
+          mode="outlined"
+          loading={fieldUsersLoading}
+          disabled={loading || hydrating || fieldUsersLoading}
+          onPress={() => void syncFieldUsersNow()}
+          contentStyle={styles.btnContent}
+        >
+          Sincronizar usuarios de campo
         </Button>
       </ScrollView>
     </>
