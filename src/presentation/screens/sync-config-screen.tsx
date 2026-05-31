@@ -79,7 +79,11 @@ export function SyncConfigScreen() {
       <Stack.Screen options={{ title: 'Sincronizar configuración', headerShown: true }} />
       <ScrollView contentContainerStyle={styles.container}>
         <Text variant="bodyMedium" style={styles.hint}>
-          Descarga configuración maestra desde la web y la guarda en SQLite para seguir operando offline.
+          Conecte a internet para descargar usuarios y configuración maestra. Luego puede operar offline.
+        </Text>
+        <Text variant="bodySmall" style={styles.orderHint}>
+          Orden recomendado: 1) Sincronizar usuarios de campo · 2) Sincronizar configuración. Repita el
+          paso 1 en cada teléfono nuevo del equipo.
         </Text>
 
         <Card style={styles.card}>
@@ -163,7 +167,8 @@ export function SyncConfigScreen() {
           <Card.Content>
             <Text variant="titleMedium">Usuarios de campo</Text>
             <Text variant="bodySmall" style={styles.label}>
-              Descarga operadores administrados en la web para login offline en SQLite.
+              Descarga operadores y administradores móviles creados en la web. Requerido en cada teléfono
+              nuevo antes del primer login de campo.
             </Text>
             {fieldUsersSync?.lastSyncAt ? (
               <>
@@ -175,9 +180,13 @@ export function SyncConfigScreen() {
                   Resultado
                 </Text>
                 <Text style={styles.valueSmall}>
-                  {fieldUsersSync.upserted} actualizados
-                  {fieldUsersSync.deactivated > 0 ? ` · ${fieldUsersSync.deactivated} desactivados` : ''}
-                  {fieldUsersSync.skippedSeedConflicts > 0
+                  {fieldUsersSync.errorMessage
+                    ? 'No se aplicaron cambios. Revise el mensaje de error abajo.'
+                    : `${fieldUsersSync.upserted} usuario(s) listo(s) para login offline`}
+                  {!fieldUsersSync.errorMessage && fieldUsersSync.deactivated > 0
+                    ? ` · ${fieldUsersSync.deactivated} desactivados`
+                    : ''}
+                  {!fieldUsersSync.errorMessage && fieldUsersSync.skippedSeedConflicts > 0
                     ? ` · ${fieldUsersSync.skippedSeedConflicts} omitidos (conflicto con seed local)`
                     : ''}
                 </Text>
@@ -191,21 +200,21 @@ export function SyncConfigScreen() {
 
         <Button
           mode="contained"
-          loading={loading}
-          disabled={loading || hydrating || fieldUsersLoading}
-          onPress={() => void syncNow()}
-          contentStyle={styles.btnContent}
-        >
-          Sincronizar configuración
-        </Button>
-        <Button
-          mode="outlined"
           loading={fieldUsersLoading}
           disabled={loading || hydrating || fieldUsersLoading}
           onPress={() => void syncFieldUsersNow()}
           contentStyle={styles.btnContent}
         >
-          Sincronizar usuarios de campo
+          1. Sincronizar usuarios de campo
+        </Button>
+        <Button
+          mode="outlined"
+          loading={loading}
+          disabled={loading || hydrating || fieldUsersLoading}
+          onPress={() => void syncNow()}
+          contentStyle={styles.btnContent}
+        >
+          2. Sincronizar configuración
         </Button>
       </ScrollView>
     </>
@@ -218,6 +227,7 @@ const styles = StyleSheet.create({
   deniedText: { textAlign: 'center', fontWeight: '600' },
   deniedSub: { textAlign: 'center', marginTop: 8, opacity: 0.75 },
   hint: { opacity: 0.75, marginBottom: 4 },
+  orderHint: { opacity: 0.7, marginBottom: 8, lineHeight: 18 },
   card: { borderRadius: 12 },
   cardSubtitle: { marginTop: 4, marginBottom: 4, opacity: 0.7, lineHeight: 18 },
   label: { marginTop: 8, opacity: 0.7 },

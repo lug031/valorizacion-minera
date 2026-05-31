@@ -2,6 +2,7 @@ import { View, StyleSheet } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import type { AuthUser } from '../../src/presentation/services/auth/auth-service';
 import { useAuthStore } from '../../src/presentation/store/auth-store';
 import { useSettingsStore } from '../../src/presentation/store/settings-store';
 import { useValuationDraftStore } from '../../src/presentation/store/valuation-draft-store';
@@ -9,6 +10,19 @@ import { ScreenHeader } from '../../src/presentation/components/ui/ScreenHeader'
 import { screenPadding } from '../../src/presentation/theme/app-theme';
 import { canManageSettings, canSyncMasterConfig } from '../../src/presentation/utils/role-access';
 import { canUseScenarioComparison } from '../../src/config/scenario-comparison-access';
+
+function sessionSubtitle(user: AuthUser | null | undefined, isAdmin: boolean): string {
+  if (!user) return isAdmin ? 'Perfil administrador' : 'Operador de campo';
+  if (user.authSource === 'local_provisioned') {
+    return isAdmin
+      ? 'Administrador móvil · usuario sincronizado desde la web'
+      : 'Operador de campo · usuario sincronizado desde la web';
+  }
+  if (user.authSource === 'local_seed' && isAdmin) {
+    return 'Administrador local de fábrica · sincronice usuarios de campo';
+  }
+  return isAdmin ? 'Perfil administrador' : 'Operador de campo';
+}
 
 export default function DashboardScreen() {
   const user = useAuthStore((s) => s.user);
@@ -18,6 +32,7 @@ export default function DashboardScreen() {
   const isAdmin = canManageSettings(user?.role);
   const canSync = canSyncMasterConfig(user?.role);
   const comparisonProductEnabled = canUseScenarioComparison();
+  const showSeedBootstrapBanner = isAdmin && user?.authSource === 'local_seed';
 
   const startNew = () => {
     initDraft(
@@ -42,8 +57,16 @@ export default function DashboardScreen() {
       <View style={styles.inner}>
         <ScreenHeader
           title={`Hola, ${user?.displayName ?? 'Usuario'}`}
-          subtitle={isAdmin ? 'Perfil administrador' : 'Operador de campo'}
+          subtitle={sessionSubtitle(user, isAdmin)}
         />
+        {showSeedBootstrapBanner ? (
+          <View style={styles.banner}>
+            <Text variant="bodySmall" style={styles.bannerText}>
+              Cree su usuario móvil en la web (Usuarios de campo), luego use Sincronizar configuración →
+              Sincronizar usuarios de campo. Después cierre sesión e ingrese con su username de campo.
+            </Text>
+          </View>
+        ) : null}
         <Button mode="contained" onPress={startNew} style={styles.btn} contentStyle={styles.btnContent}>
           Nueva valorización
         </Button>
@@ -102,6 +125,15 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f4f6f8' },
   inner: { flex: 1, padding: screenPadding },
+  banner: {
+    marginBottom: 16,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#fff7ed',
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+  },
+  bannerText: { lineHeight: 18, color: '#9a3412' },
   btn: { marginBottom: 12 },
   btnContent: { paddingVertical: 10 },
 });
