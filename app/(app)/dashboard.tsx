@@ -15,11 +15,11 @@ function sessionSubtitle(user: AuthUser | null | undefined, isAdmin: boolean): s
   if (!user) return isAdmin ? 'Perfil administrador' : 'Operador de campo';
   if (user.authSource === 'local_provisioned') {
     return isAdmin
-      ? 'Administrador móvil · usuario sincronizado desde la web'
-      : 'Operador de campo · usuario sincronizado desde la web';
+      ? 'Administrador móvil · usuario registrado en la web'
+      : 'Operador de campo · usuario registrado en la web';
   }
   if (user.authSource === 'local_seed' && isAdmin) {
-    return 'Administrador local de fábrica · sincronice usuarios de campo';
+    return 'Administrador inicial · actualice los usuarios desde Configuración';
   }
   return isAdmin ? 'Perfil administrador' : 'Operador de campo';
 }
@@ -62,8 +62,8 @@ export default function DashboardScreen() {
         {showSeedBootstrapBanner ? (
           <View style={styles.banner}>
             <Text variant="bodySmall" style={styles.bannerText}>
-              Cree su usuario móvil en la web (Usuarios de campo), luego use Sincronizar configuración →
-              Sincronizar usuarios de campo. Después cierre sesión e ingrese con su username de campo.
+              Cree su usuario móvil en la web (Usuarios de campo), luego use Configuración → Actualizar
+              usuarios de campo en este teléfono. Después cierre sesión e ingrese con su usuario de campo.
             </Text>
           </View>
         ) : null}

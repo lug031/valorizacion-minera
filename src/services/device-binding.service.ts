@@ -33,7 +33,7 @@ export async function validateDeviceBindingOnStartup(): Promise<DeviceBindingChe
     return {
       ok: false,
       reason: 'not_enrolled',
-      message: 'Este teléfono no está activado. Use «Activar dispositivo».',
+      message: 'Este teléfono no está activado. Use «Activar dispositivo» con el código del administrador.',
     };
   }
 

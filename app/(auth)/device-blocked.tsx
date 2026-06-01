@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Button, Text } from 'react-native-paper';
+import { Button } from 'react-native-paper';
 import { Redirect, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '../../src/presentation/components/ui/ScreenHeader';
@@ -48,12 +48,9 @@ export default function DeviceBlockedScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.inner}>
         <ScreenHeader title={content.title} subtitle={content.body} />
-        <Text variant="bodySmall" style={styles.hint}>
-          Los teléfonos en modo legacy (sin activación por código) no aplican este bloqueo.
-        </Text>
         {content.showRetry ? (
           <Button mode="contained" onPress={onRetry} loading={retrying} style={styles.button}>
-            Reintentar validación
+            Verificar de nuevo
           </Button>
         ) : null}
         {content.showActivateLink ? (
@@ -79,6 +76,5 @@ export default function DeviceBlockedScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f7fa' },
   inner: { flex: 1, padding: screenPadding, justifyContent: 'center' },
-  hint: { marginBottom: 24, color: '#64748b' },
   button: { marginTop: 8 },
 });

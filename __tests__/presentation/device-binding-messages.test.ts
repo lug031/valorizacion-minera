@@ -5,9 +5,9 @@ describe('device binding screen content', () => {
     const content = getDeviceBindingScreenContent({
       ok: false,
       reason: 'revoked',
-      message: 'Este dispositivo fue revocado. Contacte al administrador.',
+      message: 'Este teléfono fue retirado por el administrador.',
     });
-    expect(content.title).toBe('Dispositivo revocado');
+    expect(content.title).toBe('Teléfono desautorizado');
     expect(content.showRetry).toBe(true);
     expect(content.showActivateLink).toBe(false);
   });
@@ -18,6 +18,7 @@ describe('device binding screen content', () => {
       reason: 'not_enrolled',
       message: 'Este teléfono no está activado.',
     });
+    expect(content.title).toBe('Teléfono sin activar');
     expect(content.showActivateLink).toBe(true);
     expect(content.showRetry).toBe(false);
   });

@@ -62,9 +62,9 @@ export function enrollmentErrorMessage(code: EnrollmentErrorCode): string {
     case 'INVALID_CREDENTIALS':
       return 'Usuario o contraseña incorrectos.';
     case 'DEVICE_BLOCKED':
-      return 'Este dispositivo está bloqueado. Contacte al administrador.';
+      return 'Este teléfono está suspendido. Contacte al administrador.';
     case 'DEVICE_QUOTA_EXCEEDED':
-      return 'Cupos de dispositivo agotados. Contacte al administrador.';
+      return 'Ya hay teléfonos autorizados para esta cuenta. Contacte al administrador.';
     case 'FINGERPRINT_ALREADY_BOUND':
       return 'Este teléfono ya está registrado en otra cuenta.';
     case 'RATE_LIMITED':
@@ -74,6 +74,6 @@ export function enrollmentErrorMessage(code: EnrollmentErrorCode): string {
     case 'FIELD_USER_INACTIVE':
       return 'Usuario de campo desactivado. Contacte al administrador.';
     default:
-      return 'No se pudo activar el dispositivo. Verifique los datos o contacte al administrador.';
+      return 'No se pudo activar el teléfono. Verifique los datos o contacte al administrador.';
   }
 }

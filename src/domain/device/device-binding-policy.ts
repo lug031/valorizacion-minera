@@ -14,7 +14,7 @@ export function evaluateBindingPolicy(
     return {
       ok: false,
       reason: 'revoked',
-      message: 'Este dispositivo fue revocado. Contacte al administrador.',
+      message: 'Este teléfono fue retirado por el administrador. Solicite un nuevo código de activación.',
     };
   }
 
@@ -22,7 +22,7 @@ export function evaluateBindingPolicy(
     return {
       ok: false,
       reason: 'blocked',
-      message: 'Este dispositivo está suspendido. Contacte al administrador.',
+      message: 'Este teléfono está suspendido temporalmente. Contacte al administrador.',
     };
   }
 
@@ -37,7 +37,7 @@ export function evaluateBindingPolicy(
       return {
         ok: false,
         reason: 'expired',
-        message: 'La licencia de este dispositivo expiró. Contacte al administrador.',
+        message: 'La autorización de este teléfono venció. Contacte al administrador para renovarla.',
       };
     }
   }
@@ -46,7 +46,7 @@ export function evaluateBindingPolicy(
     return {
       ok: false,
       reason: 'stale_sync',
-      message: 'Debe conectarse a internet para validar la licencia del dispositivo.',
+      message: 'Conéctese a internet para confirmar que este teléfono sigue autorizado.',
     };
   }
 

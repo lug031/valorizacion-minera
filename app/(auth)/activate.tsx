@@ -82,8 +82,8 @@ export default function ActivateDeviceScreen() {
             subtitle="Requiere internet una sola vez. Use el código que le envió el administrador."
           />
           <Text variant="bodySmall" style={styles.hint}>
-            Username y contraseña de campo (no el correo del panel web). Tras activar, el login diario
-            funciona sin conexión.
+            Use su usuario y contraseña de campo (no el correo del panel web). Tras activar, podrá ingresar
+            sin conexión a internet.
           </Text>
           <TextInput
             mode="outlined"

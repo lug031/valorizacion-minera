@@ -11,7 +11,7 @@ import { getEnrollmentMode } from '../../src/infrastructure/device/enrollment-st
 import { refreshDeviceBindingGate } from '../../src/services/device/refresh-device-binding';
 
 const LOGIN_ERROR =
-  'Usuario o contraseña incorrectos. Si acaba de crearlo en la web, sincronice usuarios (admin) o active el dispositivo con código.';
+  'Usuario o contraseña incorrectos. Si acaba de crearlo en la web, pida al administrador un código de activación o que actualice los usuarios en este teléfono.';
 
 export default function LoginScreen() {
   const { user, login, isLoading } = useAuthStore();
@@ -63,8 +63,9 @@ export default function LoginScreen() {
           />
           {showLegacyHint ? (
             <Text variant="bodySmall" style={styles.bootstrapHint}>
-              Teléfono nuevo: pida un código al administrador y use «Activar dispositivo». En equipos
-              legacy, un admin debe sincronizar usuarios de campo antes del primer login.
+              Teléfono nuevo: pida un código al administrador y use «Activar dispositivo». En teléfonos ya
+              en uso, un administrador puede actualizar los usuarios desde Configuración antes del primer
+              ingreso.
             </Text>
           ) : (
             <Text variant="bodySmall" style={styles.bootstrapHint}>
