@@ -2,12 +2,14 @@ import { Redirect, Stack } from 'expo-router';
 import { useAuthStore } from '../../src/presentation/store/auth-store';
 import { useDeviceBindingStore } from '../../src/presentation/store/device-binding-store';
 import { useDeviceBindingGuard } from '../../src/presentation/hooks/use-device-binding-guard';
+import { useSensitiveScreenCaptureGuard } from '../../src/presentation/hooks/use-sensitive-screen-capture-guard';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 export default function AppLayout() {
   const { user, isHydrated } = useAuthStore();
   const { gateStatus, isHydrated: bindingHydrated } = useDeviceBindingStore();
   useDeviceBindingGuard(isHydrated && bindingHydrated);
+  useSensitiveScreenCaptureGuard();
 
   if (!isHydrated || !bindingHydrated) {
     return (
