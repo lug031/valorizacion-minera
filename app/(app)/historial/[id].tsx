@@ -3,7 +3,6 @@ import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Text } from 'react-native-paper';
 import { router, Stack, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { valuationAppService } from '../../../src/data/repositories';
-import { formatOwnershipUsername } from '../../../src/domain/constants/valuation-ownership';
 import { VALUATION_PERMISSION_MESSAGES } from '../../../src/domain/valuation/valuation-permissions';
 import { authUserToValuationActor } from '../../../src/presentation/utils/valuation-actor';
 import { tryParseSnapshot } from '../../../src/data/repositories/valuation-repository';
@@ -29,6 +28,7 @@ import {
   isScenarioComparisonUiVisible,
   primaryScenarioIndex,
 } from '../../../src/config/scenario-comparison-access';
+import { ValuationPanelSyncBadge } from '../../../src/presentation/components/valuation/ValuationPanelSyncBadge';
 
 export default function HistorialDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -174,8 +174,11 @@ export default function HistorialDetailScreen() {
             <Text variant="titleMedium">{valuation.code}</Text>
             <Text>Fecha de creación: {formatDisplayDate(valuation.createdAt.slice(0, 10))}</Text>
             <Text>Última modificación: {formatDisplayDate(valuation.fecha)}</Text>
-            <Text>Creado por: {formatOwnershipUsername(valuation.createdByUsername)}</Text>
-            <Text>Última edición por: {formatOwnershipUsername(valuation.updatedByUsername)}</Text>
+            <ValuationPanelSyncBadge
+              status={valuation.syncStatus}
+              errorMessage={valuation.syncError}
+              variant="bodyMedium"
+            />
             <Text>Tipo de material: {valuation.materialTypeCode}</Text>
             {valuation.providerName ? (
               <Text>Proveedor / cliente: {valuation.providerName}</Text>
@@ -211,7 +214,7 @@ export default function HistorialDetailScreen() {
                 materialTypeCode: valuation.materialTypeCode,
                 providerName: valuation.providerName,
                 observaciones: valuation.observaciones,
-                operatorName: formatOwnershipUsername(valuation.createdByUsername),
+                operatorName: user?.displayName ?? user?.username ?? 'Operador',
               },
               true,
               scenarioIndex

@@ -51,6 +51,8 @@ function mapValuation(row: ValuationRow): Valuation {
       row.updated_by_username ?? row.created_by_username
     ),
     snapshotJson: row.snapshot_json,
+    syncStatus: row.sync_status,
+    syncError: row.sync_error,
   };
 }
 
@@ -66,10 +68,8 @@ function toListItem(row: ValuationRow): ValuationListItem {
     valorCompraTotalScenarioA: first?.valorCompraTotal ?? null,
     tms: snap.results.tms,
     createdAt: row.created_at,
-    createdByUsername: formatOwnershipUsername(row.created_by_username),
-    updatedByUsername: formatOwnershipUsername(
-      row.updated_by_username ?? row.created_by_username
-    ),
+    syncStatus: row.sync_status,
+    syncError: row.sync_error,
   };
 }
 
@@ -335,6 +335,20 @@ export function createSqliteValuationRepository(
         [id]
       );
       return row?.sync_status ?? null;
+    },
+
+    async countOutbox() {
+      const db = await getDb();
+      const pending = await db.getFirst<{ c: number }>(
+        `SELECT COUNT(*) as c FROM valuations WHERE sync_status IN ('pending', 'syncing')`
+      );
+      const error = await db.getFirst<{ c: number }>(
+        `SELECT COUNT(*) as c FROM valuations WHERE sync_status = 'error'`
+      );
+      return {
+        pending: pending?.c ?? 0,
+        error: error?.c ?? 0,
+      };
     },
   };
 }

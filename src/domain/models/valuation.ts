@@ -42,6 +42,8 @@ export interface Valuation {
   updatedByUserId: string;
   updatedByUsername: string;
   snapshotJson: string;
+  syncStatus: string;
+  syncError: string | null;
 }
 
 export interface ValuationListItem {
@@ -53,6 +55,6 @@ export interface ValuationListItem {
   valorCompraTotalScenarioA: string | null;
   tms: string | null;
   createdAt: string;
-  createdByUsername: string;
-  updatedByUsername: string;
+  syncStatus: string;
+  syncError: string | null;
 }

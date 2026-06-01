@@ -1,6 +1,7 @@
+import { useCallback, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Button, Text } from 'react-native-paper';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { AuthUser } from '../../src/presentation/services/auth/auth-service';
 import { useAuthStore } from '../../src/presentation/store/auth-store';
@@ -10,6 +11,7 @@ import { ScreenHeader } from '../../src/presentation/components/ui/ScreenHeader'
 import { screenPadding } from '../../src/presentation/theme/app-theme';
 import { canManageSettings, canSyncMasterConfig } from '../../src/presentation/utils/role-access';
 import { canUseScenarioComparison } from '../../src/config/scenario-comparison-access';
+import { valuationRepository } from '../../src/data/repositories';
 
 function sessionSubtitle(user: AuthUser | null | undefined, isAdmin: boolean): string {
   if (!user) return isAdmin ? 'Perfil administrador' : 'Operador de campo';
@@ -32,7 +34,18 @@ export default function DashboardScreen() {
   const isAdmin = canManageSettings(user?.role);
   const canSync = canSyncMasterConfig(user?.role);
   const comparisonProductEnabled = canUseScenarioComparison();
-  const showSeedBootstrapBanner = isAdmin && user?.authSource === 'local_seed';
+  const showSeedBootstrapBanner =
+    typeof __DEV__ !== 'undefined' &&
+    __DEV__ &&
+    isAdmin &&
+    user?.authSource === 'local_seed';
+  const [outboxCount, setOutboxCount] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      void valuationRepository.countOutbox().then((o) => setOutboxCount(o.pending + o.error));
+    }, [])
+  );
 
   const startNew = () => {
     initDraft(
@@ -64,6 +77,14 @@ export default function DashboardScreen() {
             <Text variant="bodySmall" style={styles.bannerText}>
               Cree su usuario móvil en la web (Usuarios de campo), luego use Configuración → Actualizar
               usuarios de campo en este teléfono. Después cierre sesión e ingrese con su usuario de campo.
+            </Text>
+          </View>
+        ) : null}
+        {outboxCount > 0 ? (
+          <View style={styles.outboxBanner}>
+            <Text variant="bodySmall" style={styles.outboxBannerText}>
+              {outboxCount} cotización(es) de este teléfono pendientes de envío al panel. Revise Historial o
+              Sincronizar configuración.
             </Text>
           </View>
         ) : null}
@@ -134,6 +155,15 @@ const styles = StyleSheet.create({
     borderColor: '#fed7aa',
   },
   bannerText: { lineHeight: 18, color: '#9a3412' },
+  outboxBanner: {
+    marginBottom: 16,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  outboxBannerText: { lineHeight: 18, color: '#92400e' },
   btn: { marginBottom: 12 },
   btnContent: { paddingVertical: 10 },
 });

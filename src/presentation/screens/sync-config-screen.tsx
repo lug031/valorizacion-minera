@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Text } from 'react-native-paper';
 import { router, Stack } from 'expo-router';
 import { screenPadding } from '../theme/app-theme';
@@ -13,6 +13,9 @@ import {
   syncRecordsCardSubtitle,
   syncRecordsCardTitle,
 } from '../utils/sync-records-display';
+import { valuationRepository } from '../../data/repositories';
+import { syncPendingValuations } from '../../services/sync/sync-valuations.service';
+import { formatValuationSyncAlert } from '../../services/sync/format-valuation-sync-alert';
 
 function formatTimestamp(value: string | null): string {
   if (!value) return 'Aún no sincronizado';
@@ -50,13 +53,22 @@ export function SyncConfigScreen() {
   const syncFieldUsersNow = useSyncStore((s) => s.syncFieldUsersNow);
   const settings = useSettingsStore();
   const recordRows = buildSyncRecordRows(metadata);
+  const [valuationsLoading, setValuationsLoading] = useState(false);
+  const [outbox, setOutbox] = useState({ pending: 0, error: 0 });
+  const [lastValuationSync, setLastValuationSync] = useState<string | null>(null);
+
+  const refreshOutbox = useCallback(async () => {
+    const counts = await valuationRepository.countOutbox();
+    setOutbox(counts);
+  }, []);
 
   useEffect(() => {
     if (!canSyncMasterConfig(user?.role)) {
       router.replace('/(app)/dashboard');
     }
     void hydrate();
-  }, [hydrate, user?.role]);
+    void refreshOutbox();
+  }, [hydrate, refreshOutbox, user?.role]);
 
   if (!canSyncMasterConfig(user?.role)) {
     return (
@@ -83,8 +95,8 @@ export function SyncConfigScreen() {
           conexión.
         </Text>
         <Text variant="bodySmall" style={styles.orderHint}>
-          Orden recomendado: 1) Actualizar usuarios · 2) Actualizar configuración. Repita el paso 1 en cada
-          teléfono nuevo.
+          Orden recomendado: 1) Usuarios · 2) Configuración · 3) Enviar cotizaciones de este teléfono. Las de
+          otros equipos aparecen en el panel web cuando cada operador las envíe.
         </Text>
 
         <Card style={styles.card}>
@@ -202,7 +214,7 @@ export function SyncConfigScreen() {
         <Button
           mode="contained"
           loading={fieldUsersLoading}
-          disabled={loading || hydrating || fieldUsersLoading}
+          disabled={loading || hydrating || fieldUsersLoading || valuationsLoading}
           onPress={() => void syncFieldUsersNow()}
           contentStyle={styles.btnContent}
         >
@@ -211,11 +223,59 @@ export function SyncConfigScreen() {
         <Button
           mode="outlined"
           loading={loading}
-          disabled={loading || hydrating || fieldUsersLoading}
+          disabled={loading || hydrating || fieldUsersLoading || valuationsLoading}
           onPress={() => void syncNow()}
           contentStyle={styles.btnContent}
         >
           2. Sincronizar configuración
+        </Button>
+
+        <Card style={styles.card}>
+          <Card.Content>
+            <Text variant="titleMedium">Cotizaciones de este teléfono</Text>
+            <Text variant="bodySmall" style={styles.label}>
+              Solo se suben las guardadas en este equipo. El panel web reúne las de toda la flota.
+            </Text>
+            <Text variant="bodySmall" style={styles.label}>
+              Pendientes de envío
+            </Text>
+            <Text style={styles.value}>
+              {outbox.pending + outbox.error === 0
+                ? 'Ninguna'
+                : `${outbox.pending + outbox.error} (${outbox.error} con error)`}
+            </Text>
+            {lastValuationSync ? (
+              <>
+                <Text variant="bodySmall" style={styles.label}>
+                  Último envío al panel
+                </Text>
+                <Text style={styles.valueSmall}>{formatTimestamp(lastValuationSync)}</Text>
+              </>
+            ) : null}
+          </Card.Content>
+        </Card>
+
+        <Button
+          mode="outlined"
+          loading={valuationsLoading}
+          disabled={loading || hydrating || fieldUsersLoading || valuationsLoading}
+          onPress={() => {
+            void (async () => {
+              setValuationsLoading(true);
+              try {
+                const result = await syncPendingValuations();
+                setLastValuationSync(new Date().toISOString());
+                await refreshOutbox();
+                const { title, message } = formatValuationSyncAlert(result);
+                Alert.alert(title, message);
+              } finally {
+                setValuationsLoading(false);
+              }
+            })();
+          }}
+          contentStyle={styles.btnContent}
+        >
+          3. Enviar cotizaciones de este teléfono
         </Button>
       </ScrollView>
     </>

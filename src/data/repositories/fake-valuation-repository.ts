@@ -1,5 +1,4 @@
 import type { Valuation, ValuationListItem } from '../../domain/models/valuation';
-import { formatOwnershipUsername } from '../../domain/constants/valuation-ownership';
 import type {
   ValuationInsert,
   ValuationRepository,
@@ -31,6 +30,8 @@ export const fakeValuationRepository: ValuationRepository = {
       updatedByUserId: row.updatedByUserId,
       updatedByUsername: row.updatedByUsername,
       snapshotJson: serializeSnapshot(row.snapshot),
+      syncStatus: 'pending',
+      syncError: null,
     });
   },
 
@@ -67,8 +68,8 @@ export const fakeValuationRepository: ValuationRepository = {
         valorCompraTotalScenarioA: first?.valorCompraTotal ?? null,
         tms: snap.results.tms,
         createdAt: v.createdAt,
-        createdByUsername: formatOwnershipUsername(v.createdByUsername),
-        updatedByUsername: formatOwnershipUsername(v.updatedByUsername),
+        syncStatus: v.syncStatus,
+        syncError: v.syncError,
       };
     });
   },
@@ -115,6 +116,8 @@ export const fakeValuationRepository: ValuationRepository = {
       updatedByUsername: actor.username,
       createdAt: now,
       updatedAt: now,
+      syncStatus: 'pending',
+      syncError: null,
     });
     return newId;
   },
@@ -131,5 +134,9 @@ export const fakeValuationRepository: ValuationRepository = {
 
   async getSyncStatus(_id) {
     return null;
+  },
+
+  async countOutbox() {
+    return { pending: 0, error: 0 };
   },
 };

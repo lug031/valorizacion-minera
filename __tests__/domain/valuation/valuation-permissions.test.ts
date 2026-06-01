@@ -21,6 +21,8 @@ const baseValuation: Valuation = {
   updatedByUserId: 'u-operador',
   updatedByUsername: 'operador',
   snapshotJson: '{}',
+  syncStatus: 'synced',
+  syncError: null,
 };
 
 const admin: ValuationActor = { id: 'u-admin', username: 'admin', role: 'admin' };

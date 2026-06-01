@@ -77,6 +77,7 @@ export interface ValuationRepository {
   markSynced(id: string, cloudValuationId: string): Promise<void>;
   markSyncError(id: string, message: string): Promise<void>;
   getSyncStatus(id: string): Promise<ValuationSyncStatus | string | null>;
+  countOutbox(): Promise<{ pending: number; error: number }>;
 }
 
 export function serializeSnapshot(snapshot: ValuationSnapshot): string {

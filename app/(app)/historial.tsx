@@ -4,11 +4,13 @@ import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, Card, Text, TextInput } from 'react-native-paper';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import type { ValuationListItem } from '../../src/domain/models/valuation';
+import { valuationRepository } from '../../src/data/repositories';
 import { valuationAppService } from '../../src/data/repositories';
-import { formatOwnershipUsername } from '../../src/domain/constants/valuation-ownership';
 import { formatDisplayDate, formatMoney } from '../../src/presentation/utils/format';
 import { screenPadding } from '../../src/presentation/theme/app-theme';
 import { syncPendingValuations } from '../../src/services/sync/sync-valuations.service';
+import { formatValuationSyncAlert } from '../../src/services/sync/format-valuation-sync-alert';
+import { ValuationPanelSyncBadge } from '../../src/presentation/components/valuation/ValuationPanelSyncBadge';
 
 export default function HistorialScreen() {
   const [items, setItems] = useState<ValuationListItem[]>([]);
@@ -16,14 +18,19 @@ export default function HistorialScreen() {
   const [fechaFrom, setFechaFrom] = useState('');
   const [fechaTo, setFechaTo] = useState('');
   const [syncing, setSyncing] = useState(false);
+  const [outboxPending, setOutboxPending] = useState(0);
 
   const load = useCallback(async () => {
-    const list = await valuationAppService.search({
-      code: codeFilter || undefined,
-      fechaFrom: fechaFrom || undefined,
-      fechaTo: fechaTo || undefined,
-    });
+    const [list, outbox] = await Promise.all([
+      valuationAppService.search({
+        code: codeFilter || undefined,
+        fechaFrom: fechaFrom || undefined,
+        fechaTo: fechaTo || undefined,
+      }),
+      valuationRepository.countOutbox(),
+    ]);
     setItems(list);
+    setOutboxPending(outbox.pending + outbox.error);
   }, [codeFilter, fechaFrom, fechaTo]);
 
   useFocusEffect(
@@ -36,6 +43,11 @@ export default function HistorialScreen() {
     <>
       <Stack.Screen options={{ title: 'Historial', headerShown: true }} />
       <View style={styles.wrap}>
+        {outboxPending > 0 ? (
+          <Text variant="bodySmall" style={styles.outboxHint}>
+            {outboxPending} cotización(es) de este teléfono sin enviar al panel.
+          </Text>
+        ) : null}
         <TextInput
           mode="outlined"
           label="Buscar por código"
@@ -70,19 +82,8 @@ export default function HistorialScreen() {
               try {
                 const result = await syncPendingValuations();
                 await load();
-                if (result.attempted === 0) {
-                  Alert.alert(
-                    'Envío al panel',
-                    'No hay cotizaciones pendientes o el teléfono no está activado con conexión.'
-                  );
-                } else if (result.failed > 0) {
-                  Alert.alert(
-                    'Envío al panel',
-                    `Enviadas: ${result.synced}. Con error: ${result.failed}.${result.skipped > 0 ? ` Omitidas: ${result.skipped}.` : ''}`
-                  );
-                } else {
-                  Alert.alert('Envío al panel', `Cotizaciones enviadas: ${result.synced}.`);
-                }
+                const { title, message } = formatValuationSyncAlert(result);
+                Alert.alert(title, message);
               } finally {
                 setSyncing(false);
               }
@@ -90,7 +91,7 @@ export default function HistorialScreen() {
           }}
           style={{ marginBottom: 12 }}
         >
-          Enviar cotizaciones al panel
+          Enviar al panel
         </Button>
         <FlatList
           data={items}
@@ -103,16 +104,13 @@ export default function HistorialScreen() {
             >
               <Card.Content>
                 <Text variant="titleMedium">{item.code}</Text>
-                <Text>{formatDisplayDate(item.createdAt.slice(0, 10))} · {item.materialTypeCode}</Text>
                 <Text>
-                  Creado por: {formatOwnershipUsername(item.createdByUsername)}
-                  {item.updatedByUsername !== item.createdByUsername
-                    ? ` · Últ. ed.: ${formatOwnershipUsername(item.updatedByUsername)}`
-                    : ''}
+                  {formatDisplayDate(item.createdAt.slice(0, 10))} · {item.materialTypeCode}
                 </Text>
                 {item.providerName ? <Text>{item.providerName}</Text> : null}
                 <Text>TMS: {item.tms ?? '—'}</Text>
                 <Text style={styles.total}>Total: {formatMoney(item.valorCompraTotalScenarioA)}</Text>
+                <ValuationPanelSyncBadge status={item.syncStatus} errorMessage={item.syncError} />
               </Card.Content>
             </Card>
           )}
@@ -131,4 +129,5 @@ const styles = StyleSheet.create({
   card: { marginBottom: 10 },
   total: { fontWeight: '700', marginTop: 6 },
   empty: { textAlign: 'center', opacity: 0.6, marginTop: 24 },
+  outboxHint: { marginBottom: 10, color: '#b45309', lineHeight: 18 },
 });
