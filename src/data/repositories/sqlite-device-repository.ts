@@ -16,6 +16,7 @@ export interface SaveEnrolledDeviceInput {
 
 export interface DeviceRepository {
   getEnrolledDevice(): Promise<DeviceRegistration | null>;
+  getBindingDevice(cloudDeviceId?: string | null): Promise<DeviceRegistration | null>;
   saveEnrolledDevice(input: SaveEnrolledDeviceInput): Promise<void>;
   updateCachedStatus(input: {
     cloudDeviceId: string;
@@ -71,6 +72,26 @@ export function createSqliteDeviceRepository(
       const row = await db.getFirst<DeviceRow>(
         `SELECT * FROM devices
          WHERE enrollment_status = 'enrolled'
+         ORDER BY registered_at DESC
+         LIMIT 1`
+      );
+      return row ? mapRow(row) : null;
+    },
+
+    async getBindingDevice(cloudDeviceId) {
+      const db = await getDb();
+      if (cloudDeviceId) {
+        const byCloud = await db.getFirst<DeviceRow>(
+          `SELECT * FROM devices WHERE cloud_device_id = ? LIMIT 1`,
+          [cloudDeviceId]
+        );
+        if (byCloud) return mapRow(byCloud);
+      }
+
+      const row = await db.getFirst<DeviceRow>(
+        `SELECT * FROM devices
+         WHERE cloud_device_id IS NOT NULL
+           AND enrollment_status IN ('enrolled', 'revoked', 'pending')
          ORDER BY registered_at DESC
          LIMIT 1`
       );

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { initDataLayer } from '../../data/repositories';
+import { refreshDeviceBindingGate } from '../../services/device/refresh-device-binding';
 import { useAuthStore } from '../store/auth-store';
 import { useSettingsStore } from '../store/settings-store';
 import { useConfigStore } from '../store/config-store';
 import { useSyncStore } from '../store/sync-store';
-import { validateDeviceBindingOnStartup } from '../../services/device-binding.service';
 
 /**
  * Inicializa SQLite + hidrata stores (settings, config, auth).
@@ -22,7 +22,7 @@ export function useAppBootstrap(): { ready: boolean; error: string | null } {
     (async () => {
       try {
         await initDataLayer();
-        await validateDeviceBindingOnStartup();
+        await refreshDeviceBindingGate();
         await hydrateSettings();
         await hydrateConfig();
         await hydrateSync();

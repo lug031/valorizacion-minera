@@ -1,5 +1,5 @@
-/** Fase 3.1: pasar a true cuando el enrollment y bloqueo estén listos. */
-export const DEVICE_BINDING_REQUIRED = false;
+/** Solo aplica a dispositivos con enrollmentMode=enrolled; legacy queda exento. */
+export const DEVICE_BINDING_REQUIRED = true;
 
 /** Cupos activos por rol (alineado al modelo híbrido cloud). */
 export const MAX_ACTIVE_DEVICES_BY_ROLE = {

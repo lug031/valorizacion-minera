@@ -1,17 +1,21 @@
-import { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { Redirect } from 'expo-router';
-import { useAuthStore } from '../src/presentation/store/auth-store';
+import { Redirect } from 'expo-router';import { useAuthStore } from '../src/presentation/store/auth-store';
+import { useDeviceBindingStore } from '../src/presentation/store/device-binding-store';
 
 export default function SplashScreen() {
   const { user, isHydrated } = useAuthStore();
+  const { gateStatus, isHydrated: bindingHydrated } = useDeviceBindingStore();
 
-  if (!isHydrated) {
+  if (!isHydrated || !bindingHydrated) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#1a3a5c" />
       </View>
     );
+  }
+
+  if (gateStatus === 'blocked') {
+    return <Redirect href="/(auth)/device-blocked" />;
   }
 
   if (user) {

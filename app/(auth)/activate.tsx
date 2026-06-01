@@ -5,6 +5,7 @@ import { Button, Text, TextInput, HelperText } from 'react-native-paper';
 import { Redirect, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/presentation/store/auth-store';
+import { useDeviceBindingStore } from '../../src/presentation/store/device-binding-store';
 import { ScreenHeader } from '../../src/presentation/components/ui/ScreenHeader';
 import { screenPadding } from '../../src/presentation/theme/app-theme';
 import {
@@ -12,16 +13,18 @@ import {
   enrollmentErrorMessage,
   EnrollmentError,
 } from '../../src/services/device/device-enrollment.service';
+import { refreshDeviceBindingGate } from '../../src/services/device/refresh-device-binding';
 
 export default function ActivateDeviceScreen() {
   const { user, login, isLoading } = useAuthStore();
+  const { gateStatus, isHydrated: bindingHydrated } = useDeviceBindingStore();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [enrollmentCode, setEnrollmentCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [activating, setActivating] = useState(false);
 
-  if (user) {
+  if (user && bindingHydrated && gateStatus !== 'blocked') {
     return <Redirect href="/(app)/dashboard" />;
   }
 
@@ -48,7 +51,9 @@ export default function ActivateDeviceScreen() {
 
       const ok = await login(username.trim(), password);
       if (ok) {
-        router.replace('/(app)/dashboard');
+        await refreshDeviceBindingGate();
+        const gate = useDeviceBindingStore.getState().gateStatus;
+        router.replace(gate === 'blocked' ? '/(auth)/device-blocked' : '/(app)/dashboard');
       } else {
         setError('Dispositivo activado, pero no se pudo iniciar sesión. Intente ingresar manualmente.');
       }

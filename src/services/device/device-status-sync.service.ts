@@ -59,8 +59,8 @@ export async function syncFieldDeviceStatusIfEnrolled(): Promise<boolean> {
   const cloudDeviceId = await getCloudDeviceId();
   if (!cloudDeviceId) return false;
 
-  const localDevice = await deviceRepository.getEnrolledDevice();
-  if (!localDevice) return false;
+  const localDevice = await deviceRepository.getBindingDevice(cloudDeviceId);
+  if (!localDevice?.cloudDeviceId) return false;
 
   try {
     const deviceFingerprintHash = await getDeviceFingerprintHash();
@@ -96,7 +96,20 @@ export async function syncFieldDeviceStatusIfEnrolled(): Promise<boolean> {
 
     await setLastDeviceSyncAt(payload.serverTime);
     return true;
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes('[DEVICE_ALREADY_REVOKED]')) {
+      await deviceRepository.updateCachedStatus({
+        cloudDeviceId,
+        enrollmentStatus: 'revoked',
+        isBlocked: true,
+        validUntil: localDevice.validUntil,
+        lastSyncAt: new Date().toISOString(),
+        platform: Platform.OS,
+        appVersion: resolveAppVersion(),
+      });
+      return true;
+    }
     return false;
   }
 }

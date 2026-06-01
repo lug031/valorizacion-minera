@@ -2,13 +2,20 @@ import NetInfo from '@react-native-community/netinfo';
 import { DEVICE_BINDING_REQUIRED } from '../domain/constants/device-binding';
 import { evaluateBindingPolicy } from '../domain/device/device-binding-policy';
 import { deviceRepository } from '../data/repositories';
-import { getEnrollmentMode } from '../infrastructure/device/enrollment-store';
+import { getCloudDeviceId, getEnrollmentMode } from '../infrastructure/device/enrollment-store';
 import { syncFieldDeviceStatusIfEnrolled } from './device/device-status-sync.service';
+
+export type DeviceBindingBlockReason =
+  | 'not_enrolled'
+  | 'blocked'
+  | 'expired'
+  | 'revoked'
+  | 'stale_sync';
 
 export type DeviceBindingCheckResult =
   | { ok: true; skipped: true; reason: 'binding_not_required' | 'legacy_mode' }
   | { ok: true; skipped: false }
-  | { ok: false; reason: 'not_enrolled' | 'blocked' | 'expired' | 'revoked' | 'stale_sync'; message: string };
+  | { ok: false; reason: DeviceBindingBlockReason; message: string };
 
 export async function validateDeviceBindingOnStartup(): Promise<DeviceBindingCheckResult> {
   const mode = await getEnrollmentMode();
@@ -16,7 +23,9 @@ export async function validateDeviceBindingOnStartup(): Promise<DeviceBindingChe
     return { ok: true, skipped: true, reason: 'legacy_mode' };
   }
 
-  const device = await deviceRepository.getEnrolledDevice();
+  const cloudDeviceId = await getCloudDeviceId();
+  let device = await deviceRepository.getBindingDevice(cloudDeviceId);
+
   if (!device) {
     if (!DEVICE_BINDING_REQUIRED) {
       return { ok: true, skipped: true, reason: 'binding_not_required' };
@@ -31,10 +40,10 @@ export async function validateDeviceBindingOnStartup(): Promise<DeviceBindingChe
   const net = await NetInfo.fetch();
   if (net.isConnected) {
     await syncFieldDeviceStatusIfEnrolled();
+    device = (await deviceRepository.getBindingDevice(cloudDeviceId)) ?? device;
   }
 
-  const refreshed = (await deviceRepository.getEnrolledDevice()) ?? device;
-  const policy = evaluateBindingPolicy(refreshed, refreshed.lastSyncAt, new Date());
+  const policy = evaluateBindingPolicy(device, device.lastSyncAt, new Date());
 
   if (!policy.ok && !DEVICE_BINDING_REQUIRED) {
     return { ok: true, skipped: false };

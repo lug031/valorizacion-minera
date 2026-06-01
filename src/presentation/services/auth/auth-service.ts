@@ -1,6 +1,7 @@
 import type { AppActor } from '../../../domain/models/app-actor';
 import { userToAppActor } from '../../../domain/identity/app-actor-mapper';
 import { userRepository } from '../../../data/repositories';
+import { getEnrollmentMode, setEnrollmentMode } from '../../../infrastructure/device/enrollment-store';
 import { saveSessionToken, getSessionToken, clearSessionToken } from './session-storage';
 
 /** Sesión operativa local (alias de AppActor para compatibilidad). */
@@ -25,6 +26,11 @@ export async function loginLocal(
   if (!user) return null;
 
   const authUser = userToAppActor(user);
+
+  const enrollmentMode = await getEnrollmentMode();
+  if (!enrollmentMode) {
+    await setEnrollmentMode('legacy_roster');
+  }
 
   const token = makeToken(user.id);
   await saveSessionToken(token);

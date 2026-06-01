@@ -106,4 +106,42 @@ describe('sqlite enrollment persistence', () => {
     expect(enrolled.passwordHash).toBe('vm-sha256:new');
     expect(enrolled.authSource).toBe('local_provisioned');
   });
+
+  it('getBindingDevice devuelve dispositivo revocado para enforcement', async () => {
+    const devices = createSqliteDeviceRepository(getDb);
+    const users = createSqliteUserRepository(getDb);
+
+    const enrolled = await users.applyEnrolledFieldUser({
+      cloudUserId: 'cloud-revoke',
+      username: 'operador.rev',
+      displayName: 'Operador Rev',
+      role: 'operador',
+      passwordHash: 'vm-sha256:rev',
+      provisionedAt: '2026-05-27T11:00:00.000Z',
+    });
+
+    await devices.saveEnrolledDevice({
+      id: 'local-dev-rev',
+      userId: enrolled.id,
+      deviceFingerprint: 'vm-sha256:fingerprint-rev',
+      cloudDeviceId: 'cloud-device-rev',
+      validUntil: null,
+      isBlocked: false,
+      registeredAt: '2026-05-27T11:00:00.000Z',
+      platform: 'android',
+      appVersion: '0.1.0',
+    });
+
+    await devices.updateCachedStatus({
+      cloudDeviceId: 'cloud-device-rev',
+      enrollmentStatus: 'revoked',
+      isBlocked: false,
+      validUntil: null,
+      lastSyncAt: '2026-05-27T12:00:00.000Z',
+    });
+
+    const bound = await devices.getBindingDevice('cloud-device-rev');
+    expect(bound?.enrollmentStatus).toBe('revoked');
+    expect(bound?.cloudDeviceId).toBe('cloud-device-rev');
+  });
 });

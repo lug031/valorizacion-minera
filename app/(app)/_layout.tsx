@@ -1,16 +1,22 @@
 import { Redirect, Stack } from 'expo-router';
 import { useAuthStore } from '../../src/presentation/store/auth-store';
+import { useDeviceBindingStore } from '../../src/presentation/store/device-binding-store';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 export default function AppLayout() {
   const { user, isHydrated } = useAuthStore();
+  const { gateStatus, isHydrated: bindingHydrated } = useDeviceBindingStore();
 
-  if (!isHydrated) {
+  if (!isHydrated || !bindingHydrated) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" />
       </View>
     );
+  }
+
+  if (gateStatus === 'blocked') {
+    return <Redirect href="/(auth)/device-blocked" />;
   }
 
   if (!user) {
