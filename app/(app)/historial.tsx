@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { Alert } from 'react-native';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, Card, Text, TextInput } from 'react-native-paper';
 import { router, Stack, useFocusEffect } from 'expo-router';
@@ -7,12 +8,14 @@ import { valuationAppService } from '../../src/data/repositories';
 import { formatOwnershipUsername } from '../../src/domain/constants/valuation-ownership';
 import { formatDisplayDate, formatMoney } from '../../src/presentation/utils/format';
 import { screenPadding } from '../../src/presentation/theme/app-theme';
+import { syncPendingValuations } from '../../src/services/sync/sync-valuations.service';
 
 export default function HistorialScreen() {
   const [items, setItems] = useState<ValuationListItem[]>([]);
   const [codeFilter, setCodeFilter] = useState('');
   const [fechaFrom, setFechaFrom] = useState('');
   const [fechaTo, setFechaTo] = useState('');
+  const [syncing, setSyncing] = useState(false);
 
   const load = useCallback(async () => {
     const list = await valuationAppService.search({
@@ -54,8 +57,40 @@ export default function HistorialScreen() {
           onChangeText={setFechaTo}
           style={styles.search}
         />
-        <Button mode="contained-tonal" onPress={load} style={{ marginBottom: 12 }}>
+        <Button mode="contained-tonal" onPress={load} style={{ marginBottom: 8 }}>
           Buscar
+        </Button>
+        <Button
+          mode="outlined"
+          loading={syncing}
+          disabled={syncing}
+          onPress={() => {
+            void (async () => {
+              setSyncing(true);
+              try {
+                const result = await syncPendingValuations();
+                await load();
+                if (result.attempted === 0) {
+                  Alert.alert(
+                    'Envío al panel',
+                    'No hay cotizaciones pendientes o el teléfono no está activado con conexión.'
+                  );
+                } else if (result.failed > 0) {
+                  Alert.alert(
+                    'Envío al panel',
+                    `Enviadas: ${result.synced}. Con error: ${result.failed}.${result.skipped > 0 ? ` Omitidas: ${result.skipped}.` : ''}`
+                  );
+                } else {
+                  Alert.alert('Envío al panel', `Cotizaciones enviadas: ${result.synced}.`);
+                }
+              } finally {
+                setSyncing(false);
+              }
+            })();
+          }}
+          style={{ marginBottom: 12 }}
+        >
+          Enviar cotizaciones al panel
         </Button>
         <FlatList
           data={items}

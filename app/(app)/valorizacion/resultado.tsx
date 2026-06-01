@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import * as Crypto from 'expo-crypto';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, HelperText, Text } from 'react-native-paper';
 import { router, Stack } from 'expo-router';
@@ -28,6 +29,7 @@ import {
   isScenarioComparisonUiVisible,
   primaryScenarioIndex,
 } from '../../../src/config/scenario-comparison-access';
+import { scheduleValuationSync } from '../../../src/services/sync/sync-valuations.service';
 
 export default function ResultadoScreen() {
   const draft = useValuationDraftStore((s) => s.draft);
@@ -106,8 +108,9 @@ export default function ResultadoScreen() {
           return;
         }
 
+        const newId = `val-${Crypto.randomUUID()}`;
         await valuationAppService.insert(actor, {
-          id: `val-${Date.now()}`,
+          id: newId,
           code: draft.code,
           materialTypeCode: draft.materialTypeCode,
           providerId: null,
@@ -120,6 +123,7 @@ export default function ResultadoScreen() {
           updatedAt: now,
         });
         router.dismissTo('/(app)/historial');
+        scheduleValuationSync();
       }
 
       clearDraft();

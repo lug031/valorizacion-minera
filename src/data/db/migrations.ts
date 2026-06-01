@@ -187,4 +187,23 @@ export async function runMigrations(db: SqlExecutor): Promise<void> {
       );
     });
   }
+
+  if (currentVersion < 9) {
+    await db.withTransaction(async () => {
+      await addColumnIfMissing(db, 'valuations', 'cloud_valuation_id', 'TEXT');
+      await addColumnIfMissing(db, 'valuations', 'sync_error', 'TEXT');
+      await addColumnIfMissing(db, 'valuations', 'sync_attempted_at', 'TEXT');
+      await addColumnIfMissing(db, 'valuations', 'last_synced_at', 'TEXT');
+
+      await db.run(
+        `UPDATE valuations SET sync_status = 'pending'
+         WHERE sync_status = 'local' OR sync_status IS NULL OR trim(sync_status) = ''`
+      );
+
+      await db.run(
+        `INSERT OR REPLACE INTO schema_migrations (version, applied_at) VALUES (?, datetime('now'))`,
+        [9]
+      );
+    });
+  }
 }

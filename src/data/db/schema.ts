@@ -4,7 +4,7 @@
  */
 
 export const DB_NAME = 'valorizacion_minera.db';
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 export const CREATE_TABLES_SQL: readonly string[] = [
   `CREATE TABLE IF NOT EXISTS schema_migrations (

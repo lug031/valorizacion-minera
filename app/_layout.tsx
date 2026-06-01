@@ -8,10 +8,12 @@ import { StatusBar } from 'expo-status-bar';
 import { appTheme } from '../src/presentation/theme/app-theme';
 import { useAppBootstrap } from '../src/presentation/hooks/use-app-bootstrap';
 import { useDeviceBindingForeground } from '../src/presentation/hooks/use-device-binding-foreground';
+import { useValuationSyncForeground } from '../src/presentation/hooks/use-valuation-sync-foreground';
 
 export default function RootLayout() {
   const { ready, error } = useAppBootstrap();
   useDeviceBindingForeground(ready);
+  useValuationSyncForeground(ready);
 
   if (!ready) {
     return (

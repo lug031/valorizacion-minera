@@ -1,8 +1,14 @@
+import * as Crypto from 'expo-crypto';
 import type { Valuation, ValuationListItem } from '../../domain/models/valuation';
 import { formatOwnershipUsername } from '../../domain/constants/valuation-ownership';
 import type { SqlExecutor } from '../db/sql-executor';
 import { writeAuditLog } from '../services/audit-log';
-import { parseSnapshot, serializeSnapshot, type ValuationRepository } from './valuation-repository';
+import {
+  parseSnapshot,
+  serializeSnapshot,
+  type ValuationPushRow,
+  type ValuationRepository,
+} from './valuation-repository';
 
 interface ValuationRow {
   id: string;
@@ -20,6 +26,11 @@ interface ValuationRow {
   created_by_username: string | null;
   updated_by_user_id: string | null;
   updated_by_username: string | null;
+  sync_status: string;
+  cloud_valuation_id: string | null;
+  sync_error: string | null;
+  sync_attempted_at: string | null;
+  last_synced_at: string | null;
 }
 
 function mapValuation(row: ValuationRow): Valuation {
@@ -79,7 +90,7 @@ export function createSqliteValuationRepository(
           formula_version, snapshot_json, created_at, updated_at,
           created_by_user_id, created_by_username, updated_by_user_id, updated_by_username,
           sync_status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'local')`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
         [
           row.id,
           row.code,
@@ -225,7 +236,7 @@ export function createSqliteValuationRepository(
 
       const snapshot = parseSnapshot(source.snapshotJson);
       const now = new Date().toISOString();
-      const newId = `val-${Date.now()}`;
+      const newId = `val-${Crypto.randomUUID()}`;
 
       await this.insert({
         id: newId,
@@ -254,6 +265,76 @@ export function createSqliteValuationRepository(
       });
 
       return newId;
+    },
+
+    async listPendingForSync() {
+      const db = await getDb();
+      const rows = await db.getAll<
+        ValuationRow & { cloud_user_id: string | null }
+      >(
+        `SELECT v.*, u.cloud_user_id
+         FROM valuations v
+         INNER JOIN users u ON u.id = v.created_by_user_id
+         WHERE v.sync_status IN ('pending', 'error')
+         ORDER BY v.created_at ASC`
+      );
+      return rows.map(
+        (row): ValuationPushRow => ({
+          id: row.id,
+          code: row.code,
+          materialTypeCode: row.material_type_code,
+          providerName: row.provider_name,
+          fecha: row.fecha,
+          observaciones: row.observaciones,
+          formulaVersion: row.formula_version,
+          snapshotJson: row.snapshot_json,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          createdByUserId: row.created_by_user_id,
+          createdByUsername: formatOwnershipUsername(row.created_by_username),
+          cloudUserId: row.cloud_user_id,
+          syncStatus: row.sync_status,
+          cloudValuationId: row.cloud_valuation_id,
+        })
+      );
+    },
+
+    async markSyncing(id) {
+      const db = await getDb();
+      await db.run(
+        `UPDATE valuations SET sync_status = 'syncing', sync_attempted_at = datetime('now') WHERE id = ?`,
+        [id]
+      );
+    },
+
+    async markSynced(id, cloudValuationId) {
+      const db = await getDb();
+      await db.run(
+        `UPDATE valuations SET
+           sync_status = 'synced',
+           cloud_valuation_id = ?,
+           sync_error = NULL,
+           last_synced_at = datetime('now')
+         WHERE id = ?`,
+        [cloudValuationId, id]
+      );
+    },
+
+    async markSyncError(id, message) {
+      const db = await getDb();
+      await db.run(
+        `UPDATE valuations SET sync_status = 'error', sync_error = ?, sync_attempted_at = datetime('now') WHERE id = ?`,
+        [message.slice(0, 500), id]
+      );
+    },
+
+    async getSyncStatus(id) {
+      const db = await getDb();
+      const row = await db.getFirst<{ sync_status: string }>(
+        'SELECT sync_status FROM valuations WHERE id = ?',
+        [id]
+      );
+      return row?.sync_status ?? null;
     },
   };
 }

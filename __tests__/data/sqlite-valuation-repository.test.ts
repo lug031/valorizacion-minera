@@ -152,4 +152,12 @@ describe('sqlite valuation repository', () => {
     const listAfter = await repo.search({ code: 'VAL-UNIT-002' });
     expect(listAfter.length).toBe(0);
   });
+
+  it('marca nuevas valorizaciones como pending y permite sync', async () => {
+    expect(await repo.getSyncStatus('val-test-1')).toBe('pending');
+    await repo.markSynced('val-test-1', 'cloud-abc');
+    expect(await repo.getSyncStatus('val-test-1')).toBe('synced');
+    const pending = await repo.listPendingForSync();
+    expect(pending.some((row) => row.id === 'val-test-1')).toBe(false);
+  });
 });

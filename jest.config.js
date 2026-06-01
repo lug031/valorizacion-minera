@@ -10,6 +10,7 @@ module.exports = {
   roots: ['<rootDir>/__tests__'],
   testMatch: ['**/*.test.ts'],
   moduleNameMapper: {
+    '^expo-crypto$': '<rootDir>/__tests__/mocks/expo-crypto.ts',
     '^@domain/(.*)$': '<rootDir>/src/domain/$1',
     '^@data/(.*)$': '<rootDir>/src/data/$1',
     '^@utils/(.*)$': '<rootDir>/src/utils/$1',

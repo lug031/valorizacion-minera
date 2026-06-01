@@ -1,12 +1,32 @@
 import type { ValuationActor } from '../../domain/models/valuation-actor';
 import type { Valuation, ValuationListItem, ValuationSnapshot } from '../../domain/models/valuation';
 
+export type ValuationSyncStatus = 'pending' | 'syncing' | 'synced' | 'error';
+
 export interface ValuationSearchFilters {
   code?: string;
   fechaFrom?: string;
   fechaTo?: string;
   materialTypeCode?: string;
   providerName?: string;
+}
+
+export interface ValuationPushRow {
+  id: string;
+  code: string;
+  materialTypeCode: string;
+  providerName: string | null;
+  fecha: string;
+  observaciones: string | null;
+  formulaVersion: string;
+  snapshotJson: string;
+  createdAt: string;
+  updatedAt: string;
+  createdByUserId: string;
+  createdByUsername: string;
+  cloudUserId: string | null;
+  syncStatus: ValuationSyncStatus | string;
+  cloudValuationId: string | null;
 }
 
 export interface ValuationInsert {
@@ -52,6 +72,11 @@ export interface ValuationRepository {
   delete(id: string, actorUserId: string): Promise<void>;
   /** Copia snapshot inmutable con nuevo id/código (nueva valoración). */
   duplicate(sourceId: string, newCode: string, actor: ValuationActor): Promise<string>;
+  listPendingForSync(): Promise<ValuationPushRow[]>;
+  markSyncing(id: string): Promise<void>;
+  markSynced(id: string, cloudValuationId: string): Promise<void>;
+  markSyncError(id: string, message: string): Promise<void>;
+  getSyncStatus(id: string): Promise<ValuationSyncStatus | string | null>;
 }
 
 export function serializeSnapshot(snapshot: ValuationSnapshot): string {

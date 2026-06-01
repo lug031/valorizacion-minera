@@ -118,4 +118,18 @@ export const fakeValuationRepository: ValuationRepository = {
     });
     return newId;
   },
+
+  async listPendingForSync() {
+    return [];
+  },
+
+  async markSyncing(_id) {},
+
+  async markSynced(_id, _cloudValuationId) {},
+
+  async markSyncError(_id, _message) {},
+
+  async getSyncStatus(_id) {
+    return null;
+  },
 };
