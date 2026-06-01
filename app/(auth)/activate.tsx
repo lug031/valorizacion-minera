@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
-import { Button, Text, TextInput, HelperText } from 'react-native-paper';
+import { Button, TextInput, HelperText } from 'react-native-paper';
 import { Redirect, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/presentation/store/auth-store';
@@ -37,7 +37,7 @@ export default function ActivateDeviceScreen() {
 
     const net = await NetInfo.fetch();
     if (!net.isConnected) {
-      setError('Se requiere conexión a internet para activar el dispositivo.');
+      setError('Conéctese a internet para activar el teléfono.');
       return;
     }
 
@@ -79,15 +79,11 @@ export default function ActivateDeviceScreen() {
         <View style={styles.inner}>
           <ScreenHeader
             title="Activar dispositivo"
-            subtitle="Requiere internet una sola vez. Use el código que le envió el administrador."
+            subtitle="Ingrese el código que le envió el administrador."
           />
-          <Text variant="bodySmall" style={styles.hint}>
-            Use su usuario y contraseña de campo (no el correo del panel web). Tras activar, podrá ingresar
-            sin conexión a internet.
-          </Text>
           <TextInput
             mode="outlined"
-            label="Usuario de campo"
+            label="Usuario"
             placeholder="ej. jperez"
             value={username}
             onChangeText={setUsername}
@@ -123,7 +119,7 @@ export default function ActivateDeviceScreen() {
             Activar dispositivo
           </Button>
           <Button mode="text" onPress={() => router.replace('/(auth)/login')} disabled={busy}>
-            Ya activé este teléfono — iniciar sesión
+            Volver al inicio de sesión
           </Button>
         </View>
       </KeyboardAvoidingView>
@@ -135,7 +131,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f4f6f8' },
   flex: { flex: 1 },
   inner: { flex: 1, padding: screenPadding, justifyContent: 'center' },
-  hint: { marginBottom: 16, opacity: 0.75, lineHeight: 18 },
   field: { marginBottom: 12 },
   btn: { marginTop: 16 },
   btnContent: { paddingVertical: 8 },

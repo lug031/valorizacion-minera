@@ -1,17 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { Button, Text, TextInput, HelperText } from 'react-native-paper';
+import { Button, TextInput, HelperText } from 'react-native-paper';
 import { Redirect, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/presentation/store/auth-store';
 import { useDeviceBindingStore } from '../../src/presentation/store/device-binding-store';
 import { ScreenHeader } from '../../src/presentation/components/ui/ScreenHeader';
 import { screenPadding } from '../../src/presentation/theme/app-theme';
-import { getEnrollmentMode } from '../../src/infrastructure/device/enrollment-store';
 import { refreshDeviceBindingGate } from '../../src/services/device/refresh-device-binding';
 
-const LOGIN_ERROR =
-  'Usuario o contraseña incorrectos. Si acaba de crearlo en la web, pida al administrador un código de activación o que actualice los usuarios en este teléfono.';
+const LOGIN_ERROR = 'Usuario o contraseña incorrectos.';
 
 export default function LoginScreen() {
   const { user, login, isLoading } = useAuthStore();
@@ -19,11 +17,6 @@ export default function LoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [enrollmentMode, setEnrollmentMode] = useState<'legacy_roster' | 'enrolled' | null>(null);
-
-  useEffect(() => {
-    void getEnrollmentMode().then(setEnrollmentMode);
-  }, []);
 
   if (user && bindingHydrated && gateStatus !== 'blocked') {
     return <Redirect href="/(app)/dashboard" />;
@@ -48,8 +41,6 @@ export default function LoginScreen() {
     }
   };
 
-  const showLegacyHint = enrollmentMode !== 'enrolled';
-
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView
@@ -57,25 +48,11 @@ export default function LoginScreen() {
         style={styles.flex}
       >
         <View style={styles.inner}>
-          <ScreenHeader
-            title="Iniciar sesión"
-            subtitle="Use su usuario de campo creado en la web. No use el correo del panel web."
-          />
-          {showLegacyHint ? (
-            <Text variant="bodySmall" style={styles.bootstrapHint}>
-              Teléfono nuevo: pida un código al administrador y use «Activar dispositivo». En teléfonos ya
-              en uso, un administrador puede actualizar los usuarios desde Configuración antes del primer
-              ingreso.
-            </Text>
-          ) : (
-            <Text variant="bodySmall" style={styles.bootstrapHint}>
-              Este teléfono ya está activado. Inicie sesión con su usuario de campo.
-            </Text>
-          )}
+          <ScreenHeader title="Iniciar sesión" subtitle="Ingrese con su usuario de campo." />
           <TextInput
             mode="outlined"
-            label="Usuario de campo"
-            placeholder="ej. admin.campo o jperez"
+            label="Usuario"
+            placeholder="ej. jperez"
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
@@ -101,7 +78,7 @@ export default function LoginScreen() {
             Ingresar
           </Button>
           <Button mode="text" onPress={() => router.push('/(auth)/activate')} style={styles.linkBtn}>
-            Activar dispositivo con código
+            Tengo un código de activación
           </Button>
         </View>
       </KeyboardAvoidingView>
@@ -113,7 +90,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f4f6f8' },
   flex: { flex: 1 },
   inner: { flex: 1, padding: screenPadding, justifyContent: 'center' },
-  bootstrapHint: { marginBottom: 16, opacity: 0.75, lineHeight: 18 },
   field: { marginBottom: 12 },
   btn: { marginTop: 16 },
   btnContent: { paddingVertical: 8 },

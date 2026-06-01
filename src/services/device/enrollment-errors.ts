@@ -39,7 +39,7 @@ export function parseEnrollmentError(err: unknown): EnrollmentError {
   ) {
     return new EnrollmentError(
       'NETWORK_ERROR',
-      'Se requiere conexión a internet para activar el dispositivo.'
+      'Conéctese a internet para activar el teléfono.'
     );
   }
 
@@ -70,7 +70,7 @@ export function enrollmentErrorMessage(code: EnrollmentErrorCode): string {
     case 'RATE_LIMITED':
       return 'Demasiados intentos. Espere 15 minutos o pida un código nuevo.';
     case 'NETWORK_ERROR':
-      return 'Se requiere conexión a internet para activar el dispositivo.';
+      return 'Conéctese a internet para activar el teléfono.';
     case 'FIELD_USER_INACTIVE':
       return 'Usuario de campo desactivado. Contacte al administrador.';
     default:

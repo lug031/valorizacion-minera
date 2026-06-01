@@ -26,23 +26,23 @@ export function getDeviceBindingScreenContent(
       return {
         title: 'Teléfono desautorizado',
         body: 'Este teléfono fue retirado por el administrador. Solicite un nuevo código de activación.',
-        showRetry: true,
-        showActivateLink: false,
+        showRetry: false,
+        showActivateLink: true,
         showLogout: true,
       };
     case 'blocked':
       return {
         title: 'Teléfono suspendido',
-        body: 'Este teléfono está suspendido temporalmente. Contacte al administrador.',
-        showRetry: true,
+        body: 'Este teléfono está suspendido. Contacte al administrador.',
+        showRetry: false,
         showActivateLink: false,
         showLogout: true,
       };
     case 'expired':
       return {
         title: 'Autorización vencida',
-        body: 'La autorización de este teléfono venció. Contacte al administrador para renovarla.',
-        showRetry: true,
+        body: 'La autorización de este teléfono venció. Contacte al administrador.',
+        showRetry: false,
         showActivateLink: false,
         showLogout: true,
       };
