@@ -79,11 +79,12 @@ export function SyncConfigScreen() {
       <Stack.Screen options={{ title: 'Sincronizar configuración', headerShown: true }} />
       <ScrollView contentContainerStyle={styles.container}>
         <Text variant="bodyMedium" style={styles.hint}>
-          Conecte a internet para descargar usuarios y configuración maestra. Luego puede operar offline.
+          Conecte a internet para descargar usuarios y la configuración del negocio. Después puede trabajar sin
+          conexión.
         </Text>
         <Text variant="bodySmall" style={styles.orderHint}>
-          Orden recomendado: 1) Sincronizar usuarios de campo · 2) Sincronizar configuración. Repita el
-          paso 1 en cada teléfono nuevo del equipo.
+          Orden recomendado: 1) Actualizar usuarios · 2) Actualizar configuración. Repita el paso 1 en cada
+          teléfono nuevo.
         </Text>
 
         <Card style={styles.card}>
@@ -108,7 +109,7 @@ export function SyncConfigScreen() {
             {metadata?.validationIssues && metadata.validationIssues.length > 0 ? (
               <View style={styles.issuesBox}>
                 <Text variant="bodySmall" style={styles.label}>
-                  Detalle del bundle (nube)
+                  Detalle desde el servidor
                 </Text>
                 {metadata.validationIssues.map((issue) => (
                   <Text key={issue} style={styles.issueItem}>
@@ -182,12 +183,12 @@ export function SyncConfigScreen() {
                 <Text style={styles.valueSmall}>
                   {fieldUsersSync.errorMessage
                     ? 'No se aplicaron cambios. Revise el mensaje de error abajo.'
-                    : `${fieldUsersSync.upserted} usuario(s) listo(s) para login offline`}
+                    : `${fieldUsersSync.upserted} usuario(s) actualizado(s)`}
                   {!fieldUsersSync.errorMessage && fieldUsersSync.deactivated > 0
                     ? ` · ${fieldUsersSync.deactivated} desactivados`
                     : ''}
                   {!fieldUsersSync.errorMessage && fieldUsersSync.skippedSeedConflicts > 0
-                    ? ` · ${fieldUsersSync.skippedSeedConflicts} omitidos (conflicto con seed local)`
+                    ? ` · ${fieldUsersSync.skippedSeedConflicts} omitidos (usuario local de prueba)`
                     : ''}
                 </Text>
               </>

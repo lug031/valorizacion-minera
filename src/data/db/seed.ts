@@ -1,4 +1,5 @@
 import type { SqlExecutor } from './sql-executor';
+import { isDevSeedEnabled } from '../../config/dev-seed';
 import { COTIZADOR_DEFAULTS } from '../../domain/constants/cotizador-defaults';
 import { DEFAULT_MAQUILA_RANGES } from '../../domain/constants/default-maquila-ranges';
 import { hashPassword } from '../security/password-hash';
@@ -12,6 +13,8 @@ export async function seedDatabase(db: SqlExecutor): Promise<void> {
 }
 
 async function seedUsers(db: SqlExecutor): Promise<void> {
+  if (!isDevSeedEnabled()) return;
+
   const users = [
     {
       id: 'u-admin',

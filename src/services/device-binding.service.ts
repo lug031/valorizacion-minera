@@ -1,4 +1,5 @@
 import NetInfo from '@react-native-community/netinfo';
+import { isDeviceEnrollmentRequired } from '../config/device-enrollment-required';
 import { DEVICE_BINDING_REQUIRED } from '../domain/constants/device-binding';
 import { evaluateBindingPolicy } from '../domain/device/device-binding-policy';
 import { deviceRepository } from '../data/repositories';
@@ -20,6 +21,13 @@ export type DeviceBindingCheckResult =
 export async function validateDeviceBindingOnStartup(): Promise<DeviceBindingCheckResult> {
   const mode = await getEnrollmentMode();
   if (mode !== 'enrolled') {
+    if (isDeviceEnrollmentRequired()) {
+      return {
+        ok: false,
+        reason: 'not_enrolled',
+        message: 'Este teléfono no está activado. Use «Activar dispositivo» con el código del administrador.',
+      };
+    }
     return { ok: true, skipped: true, reason: 'legacy_mode' };
   }
 

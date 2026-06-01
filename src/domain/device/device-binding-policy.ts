@@ -1,6 +1,14 @@
 import type { DeviceRegistration } from '../models/user';
 import { DEFAULT_GRACE_DAYS_OFFLINE } from '../constants/device-binding';
 
+function resolveGraceDays(device: DeviceRegistration): number {
+  const fromDevice = device.graceDaysOffline;
+  if (typeof fromDevice === 'number' && fromDevice > 0 && fromDevice <= 90) {
+    return fromDevice;
+  }
+  return DEFAULT_GRACE_DAYS_OFFLINE;
+}
+
 export type DeviceBindingPolicyResult =
   | { ok: true }
   | { ok: false; reason: 'not_enrolled' | 'blocked' | 'expired' | 'revoked' | 'stale_sync'; message: string };
@@ -26,7 +34,7 @@ export function evaluateBindingPolicy(
     };
   }
 
-  const graceDays = DEFAULT_GRACE_DAYS_OFFLINE;
+  const graceDays = resolveGraceDays(device);
   const syncAnchor = lastSyncAt ?? device.lastSyncAt ?? device.registeredAt;
   const anchorMs = new Date(syncAnchor).getTime();
   const graceLimit = anchorMs + graceDays * 24 * 60 * 60 * 1000;

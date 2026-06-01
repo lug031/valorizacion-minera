@@ -85,6 +85,7 @@ export async function syncFieldDeviceStatusIfEnrolled(): Promise<boolean> {
       lastSyncAt: payload.serverTime,
       platform: Platform.OS,
       appVersion: resolveAppVersion(),
+      graceDaysOffline: payload.graceDaysOffline ?? null,
     });
 
     if (payload.fieldUserIsActive === false) {

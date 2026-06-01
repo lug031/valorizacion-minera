@@ -176,4 +176,15 @@ export async function runMigrations(db: SqlExecutor): Promise<void> {
       );
     });
   }
+
+  if (currentVersion < 8) {
+    await db.withTransaction(async () => {
+      await addColumnIfMissing(db, 'devices', 'grace_days_offline', 'INTEGER');
+
+      await db.run(
+        `INSERT OR REPLACE INTO schema_migrations (version, applied_at) VALUES (?, datetime('now'))`,
+        [8]
+      );
+    });
+  }
 }

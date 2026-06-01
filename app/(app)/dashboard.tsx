@@ -19,7 +19,7 @@ function sessionSubtitle(user: AuthUser | null | undefined, isAdmin: boolean): s
       : 'Operador de campo · usuario registrado en la web';
   }
   if (user.authSource === 'local_seed' && isAdmin) {
-    return 'Administrador inicial · actualice los usuarios desde Configuración';
+    return 'Actualice los usuarios desde Configuración antes de operar en equipo';
   }
   return isAdmin ? 'Perfil administrador' : 'Operador de campo';
 }

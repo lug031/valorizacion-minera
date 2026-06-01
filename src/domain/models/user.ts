@@ -27,6 +27,7 @@ export interface DeviceRegistration {
   platform: string | null;
   appVersion: string | null;
   enrollmentStatus: 'local' | 'pending' | 'enrolled' | 'revoked';
+  graceDaysOffline: number | null;
   notes: string | null;
   metadataJson: string | null;
 }

@@ -1,6 +1,7 @@
 import type { AppActor } from '../../../domain/models/app-actor';
 import { userToAppActor } from '../../../domain/identity/app-actor-mapper';
 import { userRepository } from '../../../data/repositories';
+import { isDeviceEnrollmentRequired } from '../../../config/device-enrollment-required';
 import { getEnrollmentMode, setEnrollmentMode } from '../../../infrastructure/device/enrollment-store';
 import { saveSessionToken, getSessionToken, clearSessionToken } from './session-storage';
 
@@ -28,7 +29,7 @@ export async function loginLocal(
   const authUser = userToAppActor(user);
 
   const enrollmentMode = await getEnrollmentMode();
-  if (!enrollmentMode) {
+  if (!enrollmentMode && !isDeviceEnrollmentRequired()) {
     await setEnrollmentMode('legacy_roster');
   }
 

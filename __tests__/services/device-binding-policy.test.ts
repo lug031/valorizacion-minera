@@ -14,6 +14,7 @@ function makeDevice(overrides: Partial<DeviceRegistration> = {}): DeviceRegistra
     platform: 'android',
     appVersion: '0.1.0',
     enrollmentStatus: 'enrolled',
+    graceDaysOffline: null,
     notes: null,
     metadataJson: null,
     ...overrides,

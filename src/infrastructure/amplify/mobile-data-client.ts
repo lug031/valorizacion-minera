@@ -23,7 +23,7 @@ export async function ensureSyncIdentity(): Promise<void> {
   const password = readPublicEnv('EXPO_PUBLIC_SYNC_PASSWORD');
   if (!username || !password) {
     throw new Error(
-      'No hay sesión Cognito disponible para sincronizar. Configure EXPO_PUBLIC_SYNC_USERNAME y EXPO_PUBLIC_SYNC_PASSWORD.'
+      'No se pudo conectar para actualizar datos. Contacte al administrador del sistema.'
     );
   }
 
@@ -35,7 +35,7 @@ export async function ensureSyncIdentity(): Promise<void> {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Error desconocido';
     throw new Error(
-      `No se pudo iniciar sesión para sincronizar. Verifique EXPO_PUBLIC_SYNC_USERNAME/EXPO_PUBLIC_SYNC_PASSWORD y el estado del usuario en Cognito. Detalle: ${message}`
+      `No se pudo conectar para actualizar datos. Contacte al administrador. Detalle: ${message}`
     );
   }
 }

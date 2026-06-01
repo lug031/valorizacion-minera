@@ -18,7 +18,7 @@ import {
   FINGERPRINT_VERSION,
   getDeviceFingerprintHash,
 } from './device-fingerprint.service';
-import { readPublicEnv } from '../../config/runtime-env';
+import { logDevError } from '../../config/dev-log';
 
 export interface EnrollFieldDeviceInput {
   enrollmentCode: string;
@@ -44,6 +44,7 @@ type EnrollMutationRow = {
       platform?: string | null;
       appVersion?: string | null;
       deviceLabel?: string | null;
+      graceDaysOffline?: number | null;
     } | null;
     fieldUser?: {
       id?: string;
@@ -86,6 +87,7 @@ const ENROLL_FIELD_DEVICE = /* GraphQL */ `
         platform
         appVersion
         deviceLabel
+        graceDaysOffline
       }
       fieldUser {
         id
@@ -109,35 +111,6 @@ export async function enrollFieldDeviceOnCloud(
 ): Promise<EnrollFieldDeviceResult> {
   try {
     const deviceFingerprintHash = await getDeviceFingerprintHash();
-    const endpoint = readPublicEnv(
-      'EXPO_PUBLIC_AWS_APPSYNC_ENDPOINT',
-      'EXPO_PUBLIC_APPSYNC_ENDPOINT'
-    );
-    const apiKey = readPublicEnv(
-      'EXPO_PUBLIC_AWS_APPSYNC_API_KEY',
-      'EXPO_PUBLIC_APPSYNC_API_KEY'
-    );
-    const authMode = 'apiKey';
-    const variablesForLog = {
-      enrollmentCode: input.enrollmentCode.trim(),
-      username: input.username.trim().toLowerCase(),
-      password: '***REDACTED***',
-      deviceFingerprintHash,
-      fingerprintVersion: FINGERPRINT_VERSION,
-      platform: Platform.OS,
-      appVersion: resolveAppVersion(),
-      deviceLabel: input.deviceLabel?.trim() || undefined,
-    };
-
-    console.log(
-      '[device-enrollment.service] before_enroll_mutation',
-      JSON.stringify({
-        endpoint,
-        authMode,
-        apiKeyPrefix: apiKey ? `${apiKey.slice(0, 6)}...` : 'missing',
-        variables: variablesForLog,
-      })
-    );
 
     const data = await runEnrollmentGraphql<EnrollMutationRow>(ENROLL_FIELD_DEVICE, {
       enrollmentCode: input.enrollmentCode.trim(),
@@ -149,14 +122,6 @@ export async function enrollFieldDeviceOnCloud(
       appVersion: resolveAppVersion(),
       deviceLabel: input.deviceLabel?.trim() || undefined,
     });
-    console.log(
-      '[device-enrollment.service] enroll_mutation_data',
-      JSON.stringify({
-        endpoint,
-        authMode,
-        data,
-      })
-    );
 
     const payload = data.enrollFieldDevice;
     const device = payload?.device;
@@ -195,6 +160,7 @@ export async function enrollFieldDeviceOnCloud(
       registeredAt: serverTime,
       platform: device.platform ?? Platform.OS,
       appVersion: device.appVersion ?? resolveAppVersion(),
+      graceDaysOffline: device.graceDaysOffline ?? null,
       metadataJson: JSON.stringify({
         fingerprintVersion: FINGERPRINT_VERSION,
         deviceLabel: device.deviceLabel ?? input.deviceLabel ?? null,
@@ -205,16 +171,6 @@ export async function enrollFieldDeviceOnCloud(
     await setEnrollmentMode('enrolled');
     await setLastDeviceSyncAt(serverTime);
 
-    console.log(
-      '[device-enrollment.service] enroll_success',
-      JSON.stringify({
-        cloudDeviceId: device.id,
-        cloudUserId: fieldUser.id,
-        username: fieldUser.username,
-        role: fieldUser.role,
-      })
-    );
-
     return {
       cloudDeviceId: device.id,
       cloudUserId: fieldUser.id,
@@ -222,22 +178,9 @@ export async function enrollFieldDeviceOnCloud(
       role: fieldUser.role,
     };
   } catch (error) {
-    console.error(
-      '[device-enrollment.service] enroll_error',
-      JSON.stringify({
-        errorName: error instanceof Error ? error.name : 'UnknownError',
-        errorMessage: error instanceof Error ? error.message : String(error),
-        errorStack: error instanceof Error ? error.stack : undefined,
-      })
-    );
+    logDevError('[device-enrollment.service] enroll_error', error);
     if (error instanceof EnrollmentError) throw error;
     const parsed = parseEnrollmentError(error);
-    console.error(
-      '[device-enrollment.service] enroll_error_parsed',
-      JSON.stringify({
-        parsedCode: parsed.code,
-      })
-    );
     throw new EnrollmentError(parsed.code, enrollmentErrorMessage(parsed.code));
   }
 }

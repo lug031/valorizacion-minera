@@ -12,6 +12,7 @@ export interface SaveEnrolledDeviceInput {
   platform: string | null;
   appVersion: string | null;
   metadataJson?: string | null;
+  graceDaysOffline?: number | null;
 }
 
 export interface DeviceRepository {
@@ -26,6 +27,7 @@ export interface DeviceRepository {
     lastSyncAt: string;
     appVersion?: string | null;
     platform?: string | null;
+    graceDaysOffline?: number | null;
   }): Promise<void>;
 }
 
@@ -43,6 +45,7 @@ interface DeviceRow {
   enrollment_status: string;
   notes: string | null;
   metadata_json: string | null;
+  grace_days_offline: number | null;
 }
 
 function mapRow(row: DeviceRow): DeviceRegistration {
@@ -58,6 +61,7 @@ function mapRow(row: DeviceRow): DeviceRegistration {
     platform: row.platform,
     appVersion: row.app_version,
     enrollmentStatus: row.enrollment_status as DeviceRegistration['enrollmentStatus'],
+    graceDaysOffline: row.grace_days_offline,
     notes: row.notes,
     metadataJson: row.metadata_json,
   };
@@ -104,8 +108,8 @@ export function createSqliteDeviceRepository(
         `INSERT INTO devices (
            id, user_id, device_fingerprint, cloud_device_id, valid_until, is_blocked,
            registered_at, last_sync_at, platform, app_version, enrollment_status,
-           notes, metadata_json
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'enrolled', NULL, ?)
+           grace_days_offline, notes, metadata_json
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'enrolled', ?, NULL, ?)
          ON CONFLICT(user_id, device_fingerprint) DO UPDATE SET
            cloud_device_id = excluded.cloud_device_id,
            valid_until = excluded.valid_until,
@@ -115,6 +119,7 @@ export function createSqliteDeviceRepository(
            platform = excluded.platform,
            app_version = excluded.app_version,
            enrollment_status = 'enrolled',
+           grace_days_offline = excluded.grace_days_offline,
            metadata_json = excluded.metadata_json`,
         [
           input.id,
@@ -127,6 +132,7 @@ export function createSqliteDeviceRepository(
           input.registeredAt,
           input.platform,
           input.appVersion,
+          input.graceDaysOffline ?? null,
           input.metadataJson ?? null,
         ]
       );
@@ -141,7 +147,8 @@ export function createSqliteDeviceRepository(
            valid_until = ?,
            last_sync_at = ?,
            platform = COALESCE(?, platform),
-           app_version = COALESCE(?, app_version)
+           app_version = COALESCE(?, app_version),
+           grace_days_offline = COALESCE(?, grace_days_offline)
          WHERE cloud_device_id = ?`,
         [
           input.enrollmentStatus,
@@ -150,6 +157,7 @@ export function createSqliteDeviceRepository(
           input.lastSyncAt,
           input.platform ?? null,
           input.appVersion ?? null,
+          input.graceDaysOffline ?? null,
           input.cloudDeviceId,
         ]
       );
