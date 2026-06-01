@@ -209,10 +209,21 @@ export function createSqliteUserRepository(getDb: () => Promise<SqlExecutor>): U
       const username = input.username.trim().toLowerCase();
       const localId = localIdForCloudUser(input.cloudUserId);
       const ts = input.provisionedAt;
+      let targetUserId = localId;
 
       await db.withTransaction(async () => {
-        const existing = await db.getFirst<UserRow>('SELECT * FROM users WHERE id = ?', [localId]);
-        if (existing) {
+        const byCloud = await db.getFirst<UserRow>('SELECT * FROM users WHERE cloud_user_id = ?', [
+          input.cloudUserId,
+        ]);
+        const byUsername = await db.getFirst<UserRow>(
+          'SELECT * FROM users WHERE username = ? COLLATE NOCASE',
+          [username]
+        );
+
+        const target = byCloud ?? byUsername;
+        targetUserId = target?.id ?? localId;
+
+        if (target) {
           await db.run(
             `UPDATE users SET
                username = ?, password_hash = ?, role = ?, is_active = 1, display_name = ?,
@@ -226,7 +237,7 @@ export function createSqliteUserRepository(getDb: () => Promise<SqlExecutor>): U
               input.cloudUserId,
               ts,
               ts,
-              localId,
+              targetUserId,
             ]
           );
         } else {
@@ -250,7 +261,7 @@ export function createSqliteUserRepository(getDb: () => Promise<SqlExecutor>): U
         }
       });
 
-      const user = await this.findById(localId);
+      const user = await this.findById(targetUserId);
       if (!user) throw new Error('No se pudo guardar el usuario enrollado');
       return user;
     },

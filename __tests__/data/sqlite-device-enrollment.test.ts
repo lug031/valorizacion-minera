@@ -72,4 +72,38 @@ describe('sqlite enrollment persistence', () => {
     expect(device?.cloudDeviceId).toBe('cloud-device-1');
     expect(device?.userId).toBe(enrolled.id);
   });
+
+  it('reutiliza usuario local existente cuando coincide username al enrolar', async () => {
+    const users = createSqliteUserRepository(getDb);
+
+    await db.run(
+      `INSERT INTO users (
+         id, username, password_hash, role, is_active, display_name,
+         cloud_user_id, auth_mode, provisioned_at, created_at, updated_at
+       ) VALUES (?, ?, ?, ?, 1, ?, NULL, 'local_seed', NULL, ?, ?)`,
+      [
+        'seed-lugo',
+        'lugo',
+        'vm-sha256:seed',
+        'operador',
+        'Lugo Seed',
+        '2026-05-27T09:00:00.000Z',
+        '2026-05-27T09:00:00.000Z',
+      ]
+    );
+
+    const enrolled = await users.applyEnrolledFieldUser({
+      cloudUserId: 'cloud-lugo',
+      username: 'lugo',
+      displayName: 'Lugo',
+      role: 'operador',
+      passwordHash: 'vm-sha256:new',
+      provisionedAt: '2026-05-27T11:00:00.000Z',
+    });
+
+    expect(enrolled.id).toBe('seed-lugo');
+    expect(enrolled.cloudUserId).toBe('cloud-lugo');
+    expect(enrolled.passwordHash).toBe('vm-sha256:new');
+    expect(enrolled.authSource).toBe('local_provisioned');
+  });
 });
