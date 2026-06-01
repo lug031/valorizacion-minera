@@ -160,4 +160,45 @@ describe('sqlite valuation repository', () => {
     const pending = await repo.listPendingForSync();
     expect(pending.some((row) => row.id === 'val-test-1')).toBe(false);
   });
+
+  it('resetOrphanedSyncing devuelve syncing a pending', async () => {
+    await db.run(`UPDATE valuations SET sync_status = 'syncing' WHERE id = 'val-test-1'`);
+    expect(await repo.getSyncStatus('val-test-1')).toBe('syncing');
+    const n = await repo.resetOrphanedSyncing();
+    expect(n).toBe(1);
+    expect(await repo.getSyncStatus('val-test-1')).toBe('pending');
+    const pending = await repo.listPendingForSync();
+    expect(pending.some((r) => r.id === 'val-test-1')).toBe(true);
+  });
+
+  it('listPendingForSync incluye filas sin cloud_user_id', async () => {
+    const snap = buildSnapshot();
+    await db.run(
+      `INSERT INTO users (id, username, password_hash, display_name, role, is_active, cloud_user_id, auth_mode, created_at, updated_at)
+       VALUES ('u-seed', 'seed', 'x', 'Seed', 'operador', 1, NULL, 'local_seed', datetime('now'), datetime('now'))`
+    );
+    await repo.insert({
+      id: 'val-seed-pending',
+      code: 'VAL-SEED-001',
+      materialTypeCode: 'MSC',
+      providerId: null,
+      providerName: null,
+      fecha: '2026-05-24',
+      observaciones: null,
+      formulaVersion: FORMULA_VERSION,
+      snapshot: snap,
+      createdByUserId: 'u-seed',
+      createdByUsername: 'seed',
+      updatedByUserId: 'u-seed',
+      updatedByUsername: 'seed',
+      createdAt: '2026-05-24T12:00:00.000Z',
+      updatedAt: '2026-05-24T12:00:00.000Z',
+    });
+    const pending = await repo.listPendingForSync();
+    const row = pending.find((r) => r.id === 'val-seed-pending');
+    expect(row).toBeDefined();
+    expect(row?.cloudUserId).toBeNull();
+    const queue = await repo.countSyncQueue();
+    expect(queue.skippedNoCloudUser).toBeGreaterThanOrEqual(1);
+  });
 });

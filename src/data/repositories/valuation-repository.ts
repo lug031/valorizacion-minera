@@ -1,5 +1,6 @@
 import type { ValuationActor } from '../../domain/models/valuation-actor';
 import type { Valuation, ValuationListItem, ValuationSnapshot } from '../../domain/models/valuation';
+import type { ValuationSyncQueueCounts } from './valuation-sync-queue';
 
 export type ValuationSyncStatus = 'pending' | 'syncing' | 'synced' | 'error';
 
@@ -73,10 +74,17 @@ export interface ValuationRepository {
   /** Copia snapshot inmutable con nuevo id/código (nueva valoración). */
   duplicate(sourceId: string, newCode: string, actor: ValuationActor): Promise<string>;
   listPendingForSync(): Promise<ValuationPushRow[]>;
+  /**
+   * Registros en `syncing` sin proceso activo (p. ej. cierre de app tras markSyncing).
+   * Se invoca al inicio de cada envío: vuelven a `pending` para reintento idempotente.
+   */
+  resetOrphanedSyncing(): Promise<number>;
   markSyncing(id: string): Promise<void>;
   markSynced(id: string, cloudValuationId: string): Promise<void>;
   markSyncError(id: string, message: string): Promise<void>;
   getSyncStatus(id: string): Promise<ValuationSyncStatus | string | null>;
+  countSyncQueue(): Promise<ValuationSyncQueueCounts>;
+  /** @deprecated Use countSyncQueue */
   countOutbox(): Promise<{ pending: number; error: number }>;
 }
 

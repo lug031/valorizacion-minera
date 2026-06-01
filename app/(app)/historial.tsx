@@ -11,6 +11,7 @@ import { screenPadding } from '../../src/presentation/theme/app-theme';
 import { syncPendingValuations } from '../../src/services/sync/sync-valuations.service';
 import { formatValuationSyncAlert } from '../../src/services/sync/format-valuation-sync-alert';
 import { ValuationPanelSyncBadge } from '../../src/presentation/components/valuation/ValuationPanelSyncBadge';
+import { formatSyncQueueBanner } from '../../src/presentation/utils/format-sync-queue-summary';
 
 export default function HistorialScreen() {
   const [items, setItems] = useState<ValuationListItem[]>([]);
@@ -18,19 +19,19 @@ export default function HistorialScreen() {
   const [fechaFrom, setFechaFrom] = useState('');
   const [fechaTo, setFechaTo] = useState('');
   const [syncing, setSyncing] = useState(false);
-  const [outboxPending, setOutboxPending] = useState(0);
+  const [outboxHint, setOutboxHint] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [list, outbox] = await Promise.all([
+    const [list, queue] = await Promise.all([
       valuationAppService.search({
         code: codeFilter || undefined,
         fechaFrom: fechaFrom || undefined,
         fechaTo: fechaTo || undefined,
       }),
-      valuationRepository.countOutbox(),
+      valuationRepository.countSyncQueue(),
     ]);
     setItems(list);
-    setOutboxPending(outbox.pending + outbox.error);
+    setOutboxHint(formatSyncQueueBanner(queue));
   }, [codeFilter, fechaFrom, fechaTo]);
 
   useFocusEffect(
@@ -43,9 +44,9 @@ export default function HistorialScreen() {
     <>
       <Stack.Screen options={{ title: 'Historial', headerShown: true }} />
       <View style={styles.wrap}>
-        {outboxPending > 0 ? (
+        {outboxHint ? (
           <Text variant="bodySmall" style={styles.outboxHint}>
-            {outboxPending} cotización(es) de este teléfono sin enviar al panel.
+            {outboxHint}.
           </Text>
         ) : null}
         <TextInput

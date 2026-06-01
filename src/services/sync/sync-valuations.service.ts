@@ -5,7 +5,9 @@ import { valuationRepository, deviceRepository } from '../../data/repositories';
 import { getCloudDeviceId, getEnrollmentMode } from '../../infrastructure/device/enrollment-store';
 import { runEnrollmentGraphql } from '../../infrastructure/amplify/mobile-enrollment-client';
 import { getDeviceFingerprintHash } from '../device/device-fingerprint.service';
+import { logDev } from '../../config/dev-log';
 import { parseValuationSyncError, valuationSyncErrorMessage } from './valuation-sync-errors';
+import { VALUATION_SKIP_NO_CLOUD_USER_MESSAGE } from './sync-valuation-messages';
 import type { ValuationPushRow } from '../../data/repositories/valuation-repository';
 
 export interface SyncValuationsResult {
@@ -13,6 +15,8 @@ export interface SyncValuationsResult {
   synced: number;
   skipped: number;
   failed: number;
+  /** Filas que estaban en syncing y se devolvieron a pending al iniciar */
+  recoveredOrphans: number;
   errors: string[];
 }
 
@@ -91,16 +95,18 @@ function resolveDeviceLabel(metadataJson: string | null): string | null {
   }
 }
 
+function isSkipNoCloudUserError(message: string): boolean {
+  return message.includes(VALUATION_SKIP_NO_CLOUD_USER_MESSAGE);
+}
+
 async function pushOneRow(
   row: ValuationPushRow,
   cloudDeviceId: string,
   deviceFingerprintHash: string,
   fieldDeviceLabel: string | null
 ): Promise<void> {
-  if (!row.cloudUserId) {
-    throw new Error(
-      'Esta cotización pertenece a un usuario local que aún no está registrado en el sistema central.'
-    );
+  if (!row.cloudUserId?.trim()) {
+    throw new Error(VALUATION_SKIP_NO_CLOUD_USER_MESSAGE);
   }
 
   await valuationRepository.markSyncing(row.id);
@@ -137,17 +143,24 @@ async function pushOneRow(
   } catch (error) {
     const parsed = parseValuationSyncError(error);
     const message = valuationSyncErrorMessage(parsed.code, parsed.message);
-    await valuationRepository.markSyncError(row.id, message);
+    if (!isSkipNoCloudUserError(message)) {
+      await valuationRepository.markSyncError(row.id, message);
+    }
     throw new Error(message);
   }
 }
 
+/**
+ * Recupera filas huérfanas en `syncing` (app cerrada tras markSyncing, etc.)
+ * antes de procesar la cola. Reintento seguro: el servidor deduplica por mobileId.
+ */
 export async function syncPendingValuations(): Promise<SyncValuationsResult> {
   const result: SyncValuationsResult = {
     attempted: 0,
     synced: 0,
     skipped: 0,
     failed: 0,
+    recoveredOrphans: 0,
     errors: [],
   };
 
@@ -171,6 +184,11 @@ export async function syncPendingValuations(): Promise<SyncValuationsResult> {
     return result;
   }
 
+  result.recoveredOrphans = await valuationRepository.resetOrphanedSyncing();
+  if (result.recoveredOrphans > 0) {
+    logDev('[sync-valuations] recovered orphaned syncing rows', result.recoveredOrphans);
+  }
+
   const deviceFingerprintHash = await getDeviceFingerprintHash();
   const fieldDeviceLabel = resolveDeviceLabel(device.metadataJson);
   const pending = await valuationRepository.listPendingForSync();
@@ -182,7 +200,7 @@ export async function syncPendingValuations(): Promise<SyncValuationsResult> {
       result.synced += 1;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error al sincronizar';
-      if (message.includes('usuario local que aún no está registrado')) {
+      if (isSkipNoCloudUserError(message)) {
         result.skipped += 1;
       } else {
         result.failed += 1;

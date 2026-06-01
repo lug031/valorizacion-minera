@@ -9,6 +9,7 @@ import {
   type ValuationPushRow,
   type ValuationRepository,
 } from './valuation-repository';
+import type { ValuationSyncQueueCounts } from './valuation-sync-queue';
 
 interface ValuationRow {
   id: string;
@@ -274,7 +275,7 @@ export function createSqliteValuationRepository(
       >(
         `SELECT v.*, u.cloud_user_id
          FROM valuations v
-         INNER JOIN users u ON u.id = v.created_by_user_id
+         LEFT JOIN users u ON u.id = v.created_by_user_id
          WHERE v.sync_status IN ('pending', 'error')
          ORDER BY v.created_at ASC`
       );
@@ -297,6 +298,21 @@ export function createSqliteValuationRepository(
           cloudValuationId: row.cloud_valuation_id,
         })
       );
+    },
+
+    async resetOrphanedSyncing() {
+      const db = await getDb();
+      const stuck = await db.getFirst<{ c: number }>(
+        `SELECT COUNT(*) as c FROM valuations WHERE sync_status = 'syncing'`
+      );
+      const count = stuck?.c ?? 0;
+      if (count === 0) return 0;
+      await db.run(
+        `UPDATE valuations
+         SET sync_status = 'pending', sync_error = NULL
+         WHERE sync_status = 'syncing'`
+      );
+      return count;
     },
 
     async markSyncing(id) {
@@ -337,18 +353,35 @@ export function createSqliteValuationRepository(
       return row?.sync_status ?? null;
     },
 
-    async countOutbox() {
+    async countSyncQueue(): Promise<ValuationSyncQueueCounts> {
       const db = await getDb();
       const pending = await db.getFirst<{ c: number }>(
-        `SELECT COUNT(*) as c FROM valuations WHERE sync_status IN ('pending', 'syncing')`
+        `SELECT COUNT(*) as c FROM valuations WHERE sync_status = 'pending'`
+      );
+      const syncing = await db.getFirst<{ c: number }>(
+        `SELECT COUNT(*) as c FROM valuations WHERE sync_status = 'syncing'`
       );
       const error = await db.getFirst<{ c: number }>(
         `SELECT COUNT(*) as c FROM valuations WHERE sync_status = 'error'`
       );
+      const skipped = await db.getFirst<{ c: number }>(
+        `SELECT COUNT(*) as c
+         FROM valuations v
+         LEFT JOIN users u ON u.id = v.created_by_user_id
+         WHERE v.sync_status IN ('pending', 'error')
+           AND (u.id IS NULL OR u.cloud_user_id IS NULL OR trim(u.cloud_user_id) = '')`
+      );
       return {
         pending: pending?.c ?? 0,
+        syncing: syncing?.c ?? 0,
         error: error?.c ?? 0,
+        skippedNoCloudUser: skipped?.c ?? 0,
       };
+    },
+
+    async countOutbox() {
+      const q = await this.countSyncQueue();
+      return { pending: q.pending + q.syncing, error: q.error };
     },
   };
 }

@@ -126,6 +126,10 @@ export const fakeValuationRepository: ValuationRepository = {
     return [];
   },
 
+  async resetOrphanedSyncing() {
+    return 0;
+  },
+
   async markSyncing(_id) {},
 
   async markSynced(_id, _cloudValuationId) {},
@@ -134,6 +138,10 @@ export const fakeValuationRepository: ValuationRepository = {
 
   async getSyncStatus(_id) {
     return null;
+  },
+
+  async countSyncQueue() {
+    return { pending: 0, syncing: 0, error: 0, skippedNoCloudUser: 0 };
   },
 
   async countOutbox() {

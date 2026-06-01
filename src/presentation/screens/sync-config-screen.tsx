@@ -16,6 +16,8 @@ import {
 import { valuationRepository } from '../../data/repositories';
 import { syncPendingValuations } from '../../services/sync/sync-valuations.service';
 import { formatValuationSyncAlert } from '../../services/sync/format-valuation-sync-alert';
+import type { ValuationSyncQueueCounts } from '../../data/repositories/valuation-sync-queue';
+import { formatSyncQueueDiagnostics } from '../utils/format-sync-queue-summary';
 
 function formatTimestamp(value: string | null): string {
   if (!value) return 'Aún no sincronizado';
@@ -54,12 +56,17 @@ export function SyncConfigScreen() {
   const settings = useSettingsStore();
   const recordRows = buildSyncRecordRows(metadata);
   const [valuationsLoading, setValuationsLoading] = useState(false);
-  const [outbox, setOutbox] = useState({ pending: 0, error: 0 });
+  const [syncQueue, setSyncQueue] = useState<ValuationSyncQueueCounts>({
+    pending: 0,
+    syncing: 0,
+    error: 0,
+    skippedNoCloudUser: 0,
+  });
   const [lastValuationSync, setLastValuationSync] = useState<string | null>(null);
 
   const refreshOutbox = useCallback(async () => {
-    const counts = await valuationRepository.countOutbox();
-    setOutbox(counts);
+    const counts = await valuationRepository.countSyncQueue();
+    setSyncQueue(counts);
   }, []);
 
   useEffect(() => {
@@ -237,12 +244,10 @@ export function SyncConfigScreen() {
               Solo se suben las guardadas en este equipo. El panel web reúne las de toda la flota.
             </Text>
             <Text variant="bodySmall" style={styles.label}>
-              Pendientes de envío
+              Cola de envío (este teléfono)
             </Text>
-            <Text style={styles.value}>
-              {outbox.pending + outbox.error === 0
-                ? 'Ninguna'
-                : `${outbox.pending + outbox.error} (${outbox.error} con error)`}
+            <Text style={[styles.value, styles.queueDiagnostics]}>
+              {formatSyncQueueDiagnostics(syncQueue)}
             </Text>
             {lastValuationSync ? (
               <>
@@ -304,5 +309,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   rowValue: { fontWeight: '600' },
+  queueDiagnostics: { fontWeight: '400', fontSize: 14, lineHeight: 20, marginTop: 4 },
   btnContent: { paddingVertical: 10 },
 });

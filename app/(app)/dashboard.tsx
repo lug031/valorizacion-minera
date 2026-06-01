@@ -12,6 +12,7 @@ import { screenPadding } from '../../src/presentation/theme/app-theme';
 import { canManageSettings, canSyncMasterConfig } from '../../src/presentation/utils/role-access';
 import { canUseScenarioComparison } from '../../src/config/scenario-comparison-access';
 import { valuationRepository } from '../../src/data/repositories';
+import { formatSyncQueueBanner } from '../../src/presentation/utils/format-sync-queue-summary';
 
 function sessionSubtitle(user: AuthUser | null | undefined, isAdmin: boolean): string {
   if (!user) return isAdmin ? 'Perfil administrador' : 'Operador de campo';
@@ -39,11 +40,13 @@ export default function DashboardScreen() {
     __DEV__ &&
     isAdmin &&
     user?.authSource === 'local_seed';
-  const [outboxCount, setOutboxCount] = useState(0);
+  const [outboxBanner, setOutboxBanner] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
-      void valuationRepository.countOutbox().then((o) => setOutboxCount(o.pending + o.error));
+      void valuationRepository.countSyncQueue().then((q) => {
+        setOutboxBanner(formatSyncQueueBanner(q));
+      });
     }, [])
   );
 
@@ -80,11 +83,10 @@ export default function DashboardScreen() {
             </Text>
           </View>
         ) : null}
-        {outboxCount > 0 ? (
+        {outboxBanner ? (
           <View style={styles.outboxBanner}>
             <Text variant="bodySmall" style={styles.outboxBannerText}>
-              {outboxCount} cotización(es) de este teléfono pendientes de envío al panel. Revise Historial o
-              Sincronizar configuración.
+              {outboxBanner}. Revise Historial o Sincronizar configuración.
             </Text>
           </View>
         ) : null}
