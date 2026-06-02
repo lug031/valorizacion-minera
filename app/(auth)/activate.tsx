@@ -81,12 +81,11 @@ export default function ActivateDeviceScreen() {
         <View style={styles.inner}>
           <ScreenHeader
             title="Activar dispositivo"
-            subtitle="Ingrese el código que le envió el administrador."
+            subtitle="Ingrese el código de activación."
           />
           <TextInput
             mode="outlined"
             label="Usuario"
-            placeholder="ej. jperez"
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"

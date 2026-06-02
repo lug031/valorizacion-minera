@@ -48,11 +48,10 @@ export default function LoginScreen() {
         style={styles.flex}
       >
         <View style={styles.inner}>
-          <ScreenHeader title="Iniciar sesión" subtitle="Ingrese con su usuario de campo." />
+          <ScreenHeader title="Iniciar sesión" subtitle="Ingrese con su usuario y contraseña." />
           <TextInput
             mode="outlined"
             label="Usuario"
-            placeholder="ej. jperez"
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"

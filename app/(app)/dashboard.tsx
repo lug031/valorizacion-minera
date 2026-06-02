@@ -17,17 +17,14 @@ import { unreadCommercialUpdatesCount } from '../../src/presentation/utils/comme
 import { loadCommercialDefaultsForValuation } from '../../src/services/sync/load-commercial-defaults';
 import { scheduleForegroundSync } from '../../src/services/sync/foreground-sync.service';
 
-function sessionSubtitle(user: AuthUser | null | undefined, isAdmin: boolean): string {
-  if (!user) return isAdmin ? 'Perfil administrador' : 'Operador de campo';
-  if (user.authSource === 'local_provisioned') {
-    return isAdmin
-      ? 'Administrador móvil · usuario registrado en la web'
-      : 'Operador de campo · usuario registrado en la web';
-  }
-  if (user.authSource === 'local_seed' && isAdmin) {
-    return 'Cuenta local de prueba (solo desarrollo)';
-  }
-  return isAdmin ? 'Perfil administrador' : 'Operador de campo';
+function roleDisplayLabel(role: AuthUser['role'] | undefined): string {
+  if (role === 'admin') return 'Administrador';
+  if (role === 'operador') return 'Operador';
+  return 'Usuario';
+}
+
+function sessionSubtitle(user: AuthUser | null | undefined): string {
+  return `Rol: ${roleDisplayLabel(user?.role)}`;
 }
 
 export default function DashboardScreen() {
@@ -84,7 +81,7 @@ export default function DashboardScreen() {
       <View style={styles.inner}>
         <ScreenHeader
           title={`Hola, ${user?.displayName ?? 'Usuario'}`}
-          subtitle={sessionSubtitle(user, isAdmin)}
+          subtitle={sessionSubtitle(user)}
         />
         <SyncStatusBanners showValuationOutbox />
         {showSeedBootstrapBanner ? (
