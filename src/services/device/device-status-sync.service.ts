@@ -10,6 +10,7 @@ import {
 import { runEnrollmentGraphql } from '../../infrastructure/amplify/mobile-enrollment-client';
 import { getDeviceFingerprintHash } from './device-fingerprint.service';
 import { parseEnrollmentError } from './enrollment-errors';
+import { getValidDeviceSessionToken } from './device-session-token.service';
 
 type SyncStatusRow = {
   syncFieldDeviceStatus?: {
@@ -29,12 +30,14 @@ const SYNC_FIELD_DEVICE_STATUS = /* GraphQL */ `
   mutation SyncFieldDeviceStatus(
     $cloudDeviceId: ID!
     $deviceFingerprintHash: String!
+    $sessionToken: String!
     $platform: String
     $appVersion: String
   ) {
     syncFieldDeviceStatus(
       cloudDeviceId: $cloudDeviceId
       deviceFingerprintHash: $deviceFingerprintHash
+      sessionToken: $sessionToken
       platform: $platform
       appVersion: $appVersion
     ) {
@@ -64,9 +67,14 @@ export async function syncFieldDeviceStatusIfEnrolled(): Promise<boolean> {
 
   try {
     const deviceFingerprintHash = await getDeviceFingerprintHash();
+    const sessionToken = await getValidDeviceSessionToken({
+      cloudDeviceId,
+      deviceFingerprintHash,
+    });
     const data = await runEnrollmentGraphql<SyncStatusRow>(SYNC_FIELD_DEVICE_STATUS, {
       cloudDeviceId,
       deviceFingerprintHash,
+      sessionToken,
       platform: Platform.OS,
       appVersion: resolveAppVersion(),
     });

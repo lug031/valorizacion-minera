@@ -18,6 +18,9 @@ jest.mock('../../src/infrastructure/device/enrollment-store', () => ({
   getEnrollmentMode: jest.fn(),
   getCloudDeviceId: jest.fn(),
 }));
+jest.mock('../../src/services/device/device-session-token.service', () => ({
+  getValidDeviceSessionToken: jest.fn(),
+}));
 jest.mock('../../src/infrastructure/amplify/mobile-enrollment-client', () => ({
   runEnrollmentGraphql: jest.fn(),
 }));
@@ -47,6 +50,9 @@ const { runEnrollmentGraphql } = require('../../src/infrastructure/amplify/mobil
 const { getDeviceFingerprintHash } = require('../../src/services/device/device-fingerprint.service') as {
   getDeviceFingerprintHash: jest.Mock;
 };
+const { getValidDeviceSessionToken } = require('../../src/services/device/device-session-token.service') as {
+  getValidDeviceSessionToken: jest.Mock;
+};
 
 const mockNetInfo = netInfoFetch as jest.Mock;
 const mockReset = valuationRepository.resetOrphanedSyncing;
@@ -59,6 +65,7 @@ const mockEnrollmentMode = getEnrollmentMode;
 const mockCloudDeviceId = getCloudDeviceId;
 const mockGraphql = runEnrollmentGraphql;
 const mockFingerprint = getDeviceFingerprintHash;
+const mockDeviceSessionToken = getValidDeviceSessionToken;
 
 function sampleRow(overrides: Partial<ValuationPushRow> = {}): ValuationPushRow {
   return {
@@ -92,6 +99,7 @@ describe('syncPendingValuations', () => {
       metadataJson: JSON.stringify({ deviceLabel: 'Tel A' }),
     });
     mockFingerprint.mockResolvedValue('fp-hash');
+    mockDeviceSessionToken.mockResolvedValue('session-token');
     mockReset.mockResolvedValue(0);
     mockList.mockResolvedValue([]);
   });

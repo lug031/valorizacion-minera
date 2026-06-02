@@ -5,7 +5,10 @@ import {
   canSyncMasterConfig,
   SYNC_ACCESS_DENIED_MESSAGE,
 } from '../../domain/identity/sync-access';
-import { ensureSyncIdentity, getMobileDataClient } from '../../infrastructure/amplify/sync-identity';
+import { runEnrollmentGraphql } from '../../infrastructure/amplify/mobile-enrollment-client';
+import { getCloudDeviceId } from '../../infrastructure/device/enrollment-store';
+import { getDeviceFingerprintHash } from '../device/device-fingerprint.service';
+import { getValidDeviceSessionToken } from '../device/device-session-token.service';
 import { assertPublishedConfigBundle, BundleValidationError } from './sync-config-bundle';
 import { syncCloudPayloadSchema, type SyncCloudPayload } from './sync-config.schemas';
 import { buildConfigSyncChangelog } from './build-config-sync-changelog';
@@ -16,40 +19,6 @@ import type { ConfigSyncChangelog } from './config-sync-changelog.types';
 import type { SyncConfigResult, SyncMetadata, SyncStatus } from './sync-config.types';
 import { configPayloadChecksum, isConfigBundleUnchanged } from './sync-config-checksum';
 
-const LIST_MATERIAL_TYPES = /* GraphQL */ `
-  query ListMaterialTypesForMobile {
-    listMaterialTypes(limit: 500) {
-      items {
-        id
-        code
-        label
-        isActive
-        sortOrder
-        notes
-        metadataJson
-        updatedAt
-      }
-    }
-  }
-`;
-
-const LIST_MAQUILA_RANGES = /* GraphQL */ `
-  query ListMaquilaRangesForMobile {
-    listMaquilaRanges(limit: 500) {
-      items {
-        id
-        minLeyOzTc
-        maxLeyOzTc
-        maquila
-        sortOrder
-        isActive
-        notes
-        updatedAt
-      }
-    }
-  }
-`;
-
 function mapAdminNotesToMetadataJson(
   metadataJson: string | null | undefined,
   notes: string | null | undefined
@@ -59,23 +28,50 @@ function mapAdminNotesToMetadataJson(
   return null;
 }
 
-const LIST_PROVIDERS = /* GraphQL */ `
-  query ListProvidersForMobile {
-    listProviders(limit: 500) {
-      items {
+type GetMobileConfigBundleRow = {
+  getMobileConfigBundle?: (SyncCloudPayload & {
+    serverTime?: string;
+  }) | null;
+};
+
+const GET_MOBILE_CONFIG_BUNDLE = /* GraphQL */ `
+  query GetMobileConfigBundle(
+    $cloudDeviceId: ID!
+    $deviceFingerprintHash: String!
+    $sessionToken: String!
+  ) {
+    getMobileConfigBundle(
+      cloudDeviceId: $cloudDeviceId
+      deviceFingerprintHash: $deviceFingerprintHash
+      sessionToken: $sessionToken
+    ) {
+      materialTypes {
+        id
+        code
+        label
+        isActive
+        sortOrder
+        notes
+        metadataJson
+        updatedAt
+      }
+      maquilaRanges {
+        id
+        minLeyOzTc
+        maxLeyOzTc
+        maquila
+        sortOrder
+        isActive
+        notes
+        updatedAt
+      }
+      providers {
         id
         name
         isActive
         updatedAt
       }
-    }
-  }
-`;
-
-const LIST_PROVIDER_DEFAULTS = /* GraphQL */ `
-  query ListProviderDefaultsForMobile {
-    listProviderDefaults(limit: 500) {
-      items {
+      providerDefaults {
         id
         providerId
         recPercentGold
@@ -89,14 +85,7 @@ const LIST_PROVIDER_DEFAULTS = /* GraphQL */ `
         factor
         updatedAt
       }
-    }
-  }
-`;
-
-const LIST_APP_SETTINGS = /* GraphQL */ `
-  query ListAppSettingsForMobile {
-    listAppSettings(limit: 50) {
-      items {
+      appSettings {
         id
         settingsKey
         factor
@@ -116,6 +105,7 @@ const LIST_APP_SETTINGS = /* GraphQL */ `
         interFetchError
         updatedAt
       }
+      serverTime
     }
   }
 `;
@@ -143,38 +133,25 @@ function maxUpdatedAt(rows: Array<{ updatedAt?: string | null }>): string | null
 }
 
 async function fetchCloudConfig(): Promise<SyncCloudPayload> {
-  await ensureSyncIdentity();
-  const mobileDataClient = getMobileDataClient();
+  const cloudDeviceId = await getCloudDeviceId();
+  if (!cloudDeviceId) {
+    throw new Error('No se encontró dispositivo activado para sincronizar configuración.');
+  }
+  const deviceFingerprintHash = await getDeviceFingerprintHash();
+  const sessionToken = await getValidDeviceSessionToken({
+    cloudDeviceId,
+    deviceFingerprintHash,
+  });
 
-  const runQuery = async <T>(query: string): Promise<T> => {
-    const result = (await mobileDataClient.graphql({ query })) as {
-      data?: T;
-      errors?: Array<{ message?: string }>;
-    };
-    if (result.errors?.length) {
-      throw new Error(result.errors.map((e) => e.message ?? 'Error GraphQL').join('; '));
-    }
-    if (!result.data) {
-      throw new Error('Respuesta inválida de AppSync durante sincronización.');
-    }
-    return result.data;
-  };
-
-  const [materialTypesResult, maquilaRangesResult, providersResult, providerDefaultsResult, appSettingsResult] = await Promise.all([
-    runQuery<{ listMaterialTypes?: { items?: unknown[] } }>(LIST_MATERIAL_TYPES),
-    runQuery<{ listMaquilaRanges?: { items?: unknown[] } }>(LIST_MAQUILA_RANGES),
-    runQuery<{ listProviders?: { items?: unknown[] } }>(LIST_PROVIDERS),
-    runQuery<{ listProviderDefaults?: { items?: unknown[] } }>(LIST_PROVIDER_DEFAULTS),
-    runQuery<{ listAppSettings?: { items?: unknown[] } }>(LIST_APP_SETTINGS),
-  ]);
-
-  const payload = {
-    materialTypes: materialTypesResult.listMaterialTypes?.items ?? [],
-    maquilaRanges: maquilaRangesResult.listMaquilaRanges?.items ?? [],
-    providers: providersResult.listProviders?.items ?? [],
-    providerDefaults: providerDefaultsResult.listProviderDefaults?.items ?? [],
-    appSettings: appSettingsResult.listAppSettings?.items ?? [],
-  };
+  const data = await runEnrollmentGraphql<GetMobileConfigBundleRow>(GET_MOBILE_CONFIG_BUNDLE, {
+    cloudDeviceId,
+    deviceFingerprintHash,
+    sessionToken,
+  });
+  const payload = data.getMobileConfigBundle;
+  if (!payload) {
+    throw new Error('Respuesta inválida de AppSync durante sincronización.');
+  }
 
   return syncCloudPayloadSchema.parse(payload);
 }

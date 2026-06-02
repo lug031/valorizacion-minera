@@ -2,8 +2,10 @@ import type { AppActor } from '../../../domain/models/app-actor';
 import { userToAppActor } from '../../../domain/identity/app-actor-mapper';
 import { userRepository } from '../../../data/repositories';
 import { isDeviceEnrollmentRequired } from '../../../config/device-enrollment-required';
-import { getEnrollmentMode, setEnrollmentMode } from '../../../infrastructure/device/enrollment-store';
+import { getCloudDeviceId, getEnrollmentMode, setEnrollmentMode } from '../../../infrastructure/device/enrollment-store';
 import { saveSessionToken, getSessionToken, clearSessionToken } from './session-storage';
+import { getDeviceFingerprintHash } from '../../../services/device/device-fingerprint.service';
+import { issueAndStoreDeviceSessionToken } from '../../../services/device/device-session-token.service';
 
 /** Sesión operativa local (alias de AppActor para compatibilidad). */
 export type AuthUser = AppActor;
@@ -35,6 +37,18 @@ export async function loginLocal(
 
   const token = makeToken(user.id);
   await saveSessionToken(token);
+  if (enrollmentMode === 'enrolled') {
+    const cloudDeviceId = await getCloudDeviceId();
+    if (cloudDeviceId) {
+      const deviceFingerprintHash = await getDeviceFingerprintHash();
+      await issueAndStoreDeviceSessionToken({
+        cloudDeviceId,
+        username: user.username,
+        password,
+        deviceFingerprintHash,
+      });
+    }
+  }
   await recordSession(authUser.id, token);
   return authUser;
 }

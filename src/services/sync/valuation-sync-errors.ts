@@ -2,6 +2,7 @@ const CODE_RE = /^\[([A-Z_]+)\]\s*(.*)$/;
 
 export type ValuationSyncErrorCode =
   | 'NETWORK_ERROR'
+  | 'INVALID_SESSION_TOKEN'
   | 'INVALID_PAYLOAD'
   | 'PAYLOAD_TOO_LARGE'
   | 'DEVICE_NOT_FOUND'
@@ -43,6 +44,8 @@ export function valuationSyncErrorMessage(code: ValuationSyncErrorCode, fallback
       return 'Usuario de campo desactivado. Contacte al administrador.';
     case 'PAYLOAD_TOO_LARGE':
       return 'La cotización es demasiado grande para enviar.';
+    case 'INVALID_SESSION_TOKEN':
+      return 'Sesión expirada. Inicie sesión nuevamente para continuar sincronizando.';
     case 'INVALID_PAYLOAD':
       return fallback || 'Datos de cotización inválidos.';
     default:

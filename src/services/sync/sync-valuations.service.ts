@@ -5,6 +5,7 @@ import { valuationRepository, deviceRepository } from '../../data/repositories';
 import { getCloudDeviceId, getEnrollmentMode } from '../../infrastructure/device/enrollment-store';
 import { runEnrollmentGraphql } from '../../infrastructure/amplify/mobile-enrollment-client';
 import { getDeviceFingerprintHash } from '../device/device-fingerprint.service';
+import { getValidDeviceSessionToken } from '../device/device-session-token.service';
 import { logDev } from '../../config/dev-log';
 import { parseValuationSyncError, valuationSyncErrorMessage } from './valuation-sync-errors';
 import { VALUATION_SKIP_NO_CLOUD_USER_MESSAGE } from './sync-valuation-messages';
@@ -47,6 +48,7 @@ const PUSH_MOBILE_VALUATION = /* GraphQL */ `
     $sourceUpdatedAt: String!
     $cloudDeviceId: ID!
     $deviceFingerprintHash: String!
+    $sessionToken: String!
     $fieldDeviceLabel: String
     $platform: String
     $appVersion: String
@@ -67,6 +69,7 @@ const PUSH_MOBILE_VALUATION = /* GraphQL */ `
       sourceUpdatedAt: $sourceUpdatedAt
       cloudDeviceId: $cloudDeviceId
       deviceFingerprintHash: $deviceFingerprintHash
+      sessionToken: $sessionToken
       fieldDeviceLabel: $fieldDeviceLabel
       platform: $platform
       appVersion: $appVersion
@@ -103,7 +106,8 @@ async function pushOneRow(
   row: ValuationPushRow,
   cloudDeviceId: string,
   deviceFingerprintHash: string,
-  fieldDeviceLabel: string | null
+  fieldDeviceLabel: string | null,
+  sessionToken: string
 ): Promise<void> {
   if (!row.cloudUserId?.trim()) {
     throw new Error(VALUATION_SKIP_NO_CLOUD_USER_MESSAGE);
@@ -128,6 +132,7 @@ async function pushOneRow(
       sourceUpdatedAt: row.updatedAt,
       cloudDeviceId,
       deviceFingerprintHash,
+      sessionToken,
       fieldDeviceLabel,
       platform: Platform.OS,
       appVersion: resolveAppVersion(),
@@ -188,13 +193,17 @@ async function runSyncPendingValuations(): Promise<SyncValuationsResult> {
   }
 
   const deviceFingerprintHash = await getDeviceFingerprintHash();
+  const sessionToken = await getValidDeviceSessionToken({
+    cloudDeviceId,
+    deviceFingerprintHash,
+  });
   const fieldDeviceLabel = resolveDeviceLabel(device.metadataJson);
   const pending = await valuationRepository.listPendingForSync();
 
   for (const row of pending) {
     result.attempted += 1;
     try {
-      await pushOneRow(row, cloudDeviceId, deviceFingerprintHash, fieldDeviceLabel);
+      await pushOneRow(row, cloudDeviceId, deviceFingerprintHash, fieldDeviceLabel, sessionToken);
       result.synced += 1;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error al sincronizar';

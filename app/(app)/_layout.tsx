@@ -2,6 +2,7 @@ import { Redirect, Stack } from 'expo-router';
 import { useAuthStore } from '../../src/presentation/store/auth-store';
 import { useDeviceBindingStore } from '../../src/presentation/store/device-binding-store';
 import { useDeviceBindingGuard } from '../../src/presentation/hooks/use-device-binding-guard';
+import { useDeviceBindingForeground } from '../../src/presentation/hooks/use-device-binding-foreground';
 import { useSensitiveScreenCaptureGuard } from '../../src/presentation/hooks/use-sensitive-screen-capture-guard';
 import { useCommercialSyncOnRoute } from '../../src/presentation/hooks/use-commercial-sync-on-route';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
@@ -10,6 +11,7 @@ export default function AppLayout() {
   const { user, isHydrated } = useAuthStore();
   const { gateStatus, isHydrated: bindingHydrated } = useDeviceBindingStore();
   useDeviceBindingGuard(isHydrated && bindingHydrated);
+  useDeviceBindingForeground(Boolean(user && isHydrated && bindingHydrated));
   useSensitiveScreenCaptureGuard();
   useCommercialSyncOnRoute(Boolean(user && gateStatus !== 'blocked'));
 

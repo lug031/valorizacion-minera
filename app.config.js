@@ -27,6 +27,13 @@ function loadEnvFile() {
 
 loadEnvFile();
 
+/** Guardrail opcional: validar entorno de release cuando se habilita explícitamente. */
+if (process.env.VM_STRICT_RELEASE_ENV === '1') {
+  // eslint-disable-next-line global-require
+  const { validateReleaseEnv } = require('./validate-release-env');
+  validateReleaseEnv();
+}
+
 const PUBLIC_ENV_KEYS = [
   'EXPO_PUBLIC_AWS_REGION',
   'EXPO_PUBLIC_AWS_USER_POOL_ID',
@@ -35,8 +42,6 @@ const PUBLIC_ENV_KEYS = [
   'EXPO_PUBLIC_APPSYNC_ENDPOINT',
   'EXPO_PUBLIC_AWS_APPSYNC_API_KEY',
   'EXPO_PUBLIC_APPSYNC_API_KEY',
-  'EXPO_PUBLIC_SYNC_USERNAME',
-  'EXPO_PUBLIC_SYNC_PASSWORD',
   'EXPO_PUBLIC_ENABLE_DEV_SEED',
   'EXPO_PUBLIC_REQUIRE_DEVICE_ENROLLMENT',
 ];

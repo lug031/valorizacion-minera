@@ -19,6 +19,8 @@ import {
   getDeviceFingerprintHash,
 } from './device-fingerprint.service';
 import { logDevError } from '../../config/dev-log';
+import { hashPassword } from '../../data/security/password-hash';
+import { issueAndStoreDeviceSessionToken } from './device-session-token.service';
 
 export interface EnrollFieldDeviceInput {
   enrollmentCode: string;
@@ -133,18 +135,30 @@ export async function enrollFieldDeviceOnCloud(
       !fieldUser?.id ||
       !fieldUser.username ||
       !fieldUser.displayName ||
-      !fieldUser.role ||
-      !fieldUser.mobilePasswordHash
+      !fieldUser.role
     ) {
       throw new EnrollmentError('UNKNOWN', 'Respuesta incompleta al activar el dispositivo.');
     }
+
+    const derivedPasswordHash = await hashPassword(input.password);
+    const responsePasswordHash = fieldUser.mobilePasswordHash?.trim() || null;
+    if (
+      responsePasswordHash &&
+      responsePasswordHash !== derivedPasswordHash
+    ) {
+      logDevError(
+        '[device-enrollment.service] enrollment_hash_mismatch',
+        'Se usará hash recibido del servidor por compatibilidad'
+      );
+    }
+    const passwordHashForLocalUser = responsePasswordHash ?? derivedPasswordHash;
 
     const localUser = await userRepository.applyEnrolledFieldUser({
       cloudUserId: fieldUser.id,
       username: fieldUser.username,
       displayName: fieldUser.displayName,
       role: fieldUser.role,
-      passwordHash: fieldUser.mobilePasswordHash,
+      passwordHash: passwordHashForLocalUser,
       provisionedAt: serverTime,
     });
 
@@ -170,6 +184,12 @@ export async function enrollFieldDeviceOnCloud(
     await setCloudDeviceId(device.id);
     await setEnrollmentMode('enrolled');
     await setLastDeviceSyncAt(serverTime);
+    await issueAndStoreDeviceSessionToken({
+      cloudDeviceId: device.id,
+      username: fieldUser.username,
+      password: input.password,
+      deviceFingerprintHash,
+    });
 
     return {
       cloudDeviceId: device.id,

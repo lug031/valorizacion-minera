@@ -7,11 +7,13 @@
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
+    "android:release:check": "npm run validate:release-env && expo run:android --variant release",
     "test": "jest",
     "test:watch": "jest --watch",
     "typecheck": "tsc --noEmit -p tsconfig.jest.json",
     "typecheck:app": "tsc --noEmit -p tsconfig.app.json",
-    "ios": "expo run:ios"
+    "ios": "expo run:ios",
+    "validate:release-env": "node ./validate-release-env.js"
   },
   "dependencies": {
     "@aws-amplify/react-native": "^1.3.3",
