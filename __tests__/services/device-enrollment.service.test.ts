@@ -28,7 +28,7 @@ jest.mock('../../src/config/dev-log', () => ({
 }));
 
 jest.mock('../../src/services/device/device-session-token.service', () => ({
-  issueAndStoreDeviceSessionToken: jest.fn(),
+  tryIssueAndStoreDeviceSessionToken: jest.fn(),
 }));
 
 const { enrollFieldDeviceOnCloud } = require('../../src/services/device/device-enrollment.service') as typeof import('../../src/services/device/device-enrollment.service');
@@ -60,8 +60,8 @@ const {
 const { logDevError } = require('../../src/config/dev-log') as {
   logDevError: jest.Mock;
 };
-const { issueAndStoreDeviceSessionToken } = require('../../src/services/device/device-session-token.service') as {
-  issueAndStoreDeviceSessionToken: jest.Mock;
+const { tryIssueAndStoreDeviceSessionToken } = require('../../src/services/device/device-session-token.service') as {
+  tryIssueAndStoreDeviceSessionToken: jest.Mock;
 };
 
 describe('enrollFieldDeviceOnCloud', () => {
@@ -74,7 +74,7 @@ describe('enrollFieldDeviceOnCloud', () => {
     setCloudDeviceId.mockResolvedValue(undefined);
     setEnrollmentMode.mockResolvedValue(undefined);
     setLastDeviceSyncAt.mockResolvedValue(undefined);
-    issueAndStoreDeviceSessionToken.mockResolvedValue('token');
+    tryIssueAndStoreDeviceSessionToken.mockResolvedValue('token');
   });
 
   it('usa mobilePasswordHash cuando viene en respuesta (compatibilidad actual)', async () => {
@@ -192,5 +192,39 @@ describe('enrollFieldDeviceOnCloud', () => {
         passwordHash: 'vm-sha256:distinto',
       })
     );
+  });
+
+  it('completa activación aunque falle el token de sesión en la nube', async () => {
+    runEnrollmentGraphql.mockResolvedValue({
+      enrollFieldDevice: {
+        device: {
+          id: 'cloud-device-4',
+          validUntil: null,
+          isBlocked: false,
+          platform: 'android',
+          appVersion: '1.0.0',
+          deviceLabel: 'Tel D',
+          graceDaysOffline: 7,
+        },
+        fieldUser: {
+          id: 'cloud-user-4',
+          username: 'lugo',
+          displayName: 'Lugo',
+          role: 'operador',
+          isActive: true,
+        },
+        serverTime: '2026-06-02T18:33:00.000Z',
+      },
+    });
+    tryIssueAndStoreDeviceSessionToken.mockResolvedValue(null);
+
+    const result = await enrollFieldDeviceOnCloud({
+      enrollmentCode: 'JBKP-WQBK',
+      username: 'lugo',
+      password: 'clave',
+    });
+
+    expect(result.cloudDeviceId).toBe('cloud-device-4');
+    expect(setEnrollmentMode).toHaveBeenCalledWith('enrolled');
   });
 });

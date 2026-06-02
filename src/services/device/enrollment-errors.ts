@@ -32,6 +32,17 @@ export function parseEnrollmentError(err: unknown): EnrollmentError {
   const lowered = message.toLowerCase();
 
   if (
+    lowered.includes('token de sesión') ||
+    lowered.includes('secret de sesión') ||
+    lowered.includes('device_session_token')
+  ) {
+    return new EnrollmentError(
+      'UNKNOWN',
+      'El dispositivo quedó activado en el servidor, pero falta configurar la sesión en la nube. Contacte soporte o reintente el inicio de sesión tras actualizar la app.'
+    );
+  }
+
+  if (
     lowered.includes('network') ||
     lowered.includes('offline') ||
     lowered.includes('internet') ||

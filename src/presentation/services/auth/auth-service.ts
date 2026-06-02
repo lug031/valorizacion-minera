@@ -5,7 +5,7 @@ import { isDeviceEnrollmentRequired } from '../../../config/device-enrollment-re
 import { getCloudDeviceId, getEnrollmentMode, setEnrollmentMode } from '../../../infrastructure/device/enrollment-store';
 import { saveSessionToken, getSessionToken, clearSessionToken } from './session-storage';
 import { getDeviceFingerprintHash } from '../../../services/device/device-fingerprint.service';
-import { issueAndStoreDeviceSessionToken } from '../../../services/device/device-session-token.service';
+import { tryIssueAndStoreDeviceSessionToken } from '../../../services/device/device-session-token.service';
 
 /** Sesión operativa local (alias de AppActor para compatibilidad). */
 export type AuthUser = AppActor;
@@ -41,7 +41,7 @@ export async function loginLocal(
     const cloudDeviceId = await getCloudDeviceId();
     if (cloudDeviceId) {
       const deviceFingerprintHash = await getDeviceFingerprintHash();
-      await issueAndStoreDeviceSessionToken({
+      await tryIssueAndStoreDeviceSessionToken({
         cloudDeviceId,
         username: user.username,
         password,

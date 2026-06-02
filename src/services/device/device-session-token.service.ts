@@ -1,3 +1,4 @@
+import { logDevError } from '../../config/dev-log';
 import { runEnrollmentGraphql } from '../../infrastructure/amplify/mobile-enrollment-client';
 import {
   getDeviceSessionExpiresAt,
@@ -88,6 +89,21 @@ export async function issueAndStoreDeviceSessionToken(params: {
   await setDeviceSessionToken(payload.sessionToken);
   await setDeviceSessionExpiresAt(payload.expiresAt);
   return payload.sessionToken;
+}
+
+/** No bloquea activación/login si el backend aún no tiene DEVICE_SESSION_TOKEN_SECRET. */
+export async function tryIssueAndStoreDeviceSessionToken(params: {
+  cloudDeviceId: string;
+  username: string;
+  password: string;
+  deviceFingerprintHash: string;
+}): Promise<string | null> {
+  try {
+    return await issueAndStoreDeviceSessionToken(params);
+  } catch (error) {
+    logDevError('[device-session-token] issue_failed', error);
+    return null;
+  }
 }
 
 export async function getValidDeviceSessionToken(params: {

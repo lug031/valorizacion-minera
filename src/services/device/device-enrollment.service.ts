@@ -20,7 +20,7 @@ import {
 } from './device-fingerprint.service';
 import { logDevError } from '../../config/dev-log';
 import { hashPassword } from '../../data/security/password-hash';
-import { issueAndStoreDeviceSessionToken } from './device-session-token.service';
+import { tryIssueAndStoreDeviceSessionToken } from './device-session-token.service';
 
 export interface EnrollFieldDeviceInput {
   enrollmentCode: string;
@@ -184,7 +184,7 @@ export async function enrollFieldDeviceOnCloud(
     await setCloudDeviceId(device.id);
     await setEnrollmentMode('enrolled');
     await setLastDeviceSyncAt(serverTime);
-    await issueAndStoreDeviceSessionToken({
+    await tryIssueAndStoreDeviceSessionToken({
       cloudDeviceId: device.id,
       username: fieldUser.username,
       password: input.password,

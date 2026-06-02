@@ -24,9 +24,13 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (username, password) => {
     set({ isLoading: true });
-    const user = await loginLocal(username, password);
-    set({ user, isLoading: false });
-    return user != null;
+    try {
+      const user = await loginLocal(username, password);
+      set({ user });
+      return user != null;
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
   logout: async () => {
