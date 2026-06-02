@@ -42,9 +42,9 @@ describe('identidad AppActor', () => {
     expect(valuationActor.cloudUserId).toBe('cognito-sub-123');
   });
 
-  it('restringe sync maestro a admin', () => {
+  it('permite descarga de config maestra a admin y operador', () => {
     const admin: AppActor = { ...userToAppActor(baseUser), id: 'u-admin', role: 'admin' };
     expect(canSyncMasterConfig(admin.role)).toBe(true);
-    expect(canSyncMasterConfig(baseUser.role)).toBe(false);
+    expect(canSyncMasterConfig(baseUser.role)).toBe(true);
   });
 });

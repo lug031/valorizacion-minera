@@ -3,7 +3,7 @@ export interface ValuationSyncQueueCounts {
   pending: number;
   syncing: number;
   error: number;
-  /** pending/error que no pueden enviarse hasta sincronizar usuarios de campo */
+  /** pending/error que no pueden enviarse sin cloud_user_id en el autor */
   skippedNoCloudUser: number;
 }
 

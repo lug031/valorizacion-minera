@@ -8,7 +8,11 @@ import {
 import { ensureSyncIdentity, getMobileDataClient } from '../../infrastructure/amplify/sync-identity';
 import { assertPublishedConfigBundle, BundleValidationError } from './sync-config-bundle';
 import { syncCloudPayloadSchema, type SyncCloudPayload } from './sync-config.schemas';
+import { buildConfigSyncChangelog } from './build-config-sync-changelog';
+import { captureConfigSnapshot } from './config-sync-snapshot';
+import type { ConfigSyncChangelog } from './config-sync-changelog.types';
 import type { SyncConfigResult, SyncMetadata, SyncStatus } from './sync-config.types';
+import { configPayloadChecksum, isConfigBundleUnchanged } from './sync-config-checksum';
 
 const LIST_MATERIAL_TYPES = /* GraphQL */ `
   query ListMaterialTypesForMobile {
@@ -136,10 +140,6 @@ function maxUpdatedAt(rows: Array<{ updatedAt?: string | null }>): string | null
   return values.length ? values[values.length - 1] : null;
 }
 
-function checksum(payload: SyncCloudPayload): string {
-  return JSON.stringify(payload);
-}
-
 async function fetchCloudConfig(): Promise<SyncCloudPayload> {
   await ensureSyncIdentity();
   const mobileDataClient = getMobileDataClient();
@@ -189,6 +189,8 @@ function buildMetadata(
     bundleVersion?: string | null;
     validationIssues?: string[];
     preserveLastSyncAt?: string | null;
+    configChangelog?: ConfigSyncChangelog | null;
+    preserveConfigChangelog?: ConfigSyncChangelog | null;
   }
 ): SyncMetadata {
   return {
@@ -211,7 +213,11 @@ function buildMetadata(
     maxUpdatedAtProviders: maxUpdatedAt(payload.providers),
     maxUpdatedAtProviderDefaults: maxUpdatedAt(payload.providerDefaults),
     maxUpdatedAtAppSettings: maxUpdatedAt(payload.appSettings),
-    rawChecksum: checksum(payload),
+    rawChecksum: configPayloadChecksum(payload),
+    configChangelog:
+      options?.configChangelog ??
+      options?.preserveConfigChangelog ??
+      null,
   };
 }
 
@@ -221,8 +227,8 @@ async function persistPayload(payload: SyncCloudPayload): Promise<void> {
     await db.run('DELETE FROM material_types');
     for (const row of payload.materialTypes) {
       await db.run(
-        `INSERT INTO material_types (id, code, label, is_active, sort_order, metadata_json)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO material_types (id, code, label, is_active, sort_order, metadata_json, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           row.id,
           row.code,
@@ -230,6 +236,7 @@ async function persistPayload(payload: SyncCloudPayload): Promise<void> {
           row.isActive === false ? 0 : 1,
           row.sortOrder ?? 0,
           mapAdminNotesToMetadataJson(row.metadataJson, row.notes),
+          row.updatedAt ?? null,
         ]
       );
     }
@@ -237,9 +244,17 @@ async function persistPayload(payload: SyncCloudPayload): Promise<void> {
     await db.run('DELETE FROM maquila_ranges');
     for (const row of payload.maquilaRanges) {
       await db.run(
-        `INSERT INTO maquila_ranges (id, min_ley_oz_tc, max_ley_oz_tc, maquila, sort_order, is_active)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [row.id, row.minLeyOzTc, row.maxLeyOzTc, row.maquila, row.sortOrder ?? 0, row.isActive === false ? 0 : 1]
+        `INSERT INTO maquila_ranges (id, min_ley_oz_tc, max_ley_oz_tc, maquila, sort_order, is_active, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          row.id,
+          row.minLeyOzTc,
+          row.maxLeyOzTc,
+          row.maquila,
+          row.sortOrder ?? 0,
+          row.isActive === false ? 0 : 1,
+          row.updatedAt ?? null,
+        ]
       );
     }
 
@@ -333,11 +348,28 @@ export async function syncMasterConfig(actor: AppActor): Promise<SyncConfigResul
     // Validación de bundle completo ANTES de cualquier escritura SQLite de catálogos.
     const bundle = assertPublishedConfigBundle(payload);
 
+    if (isConfigBundleUnchanged(previous, payload)) {
+      const metadata: SyncMetadata = {
+        ...previous,
+        status: 'success',
+        errorMessage: null,
+        validationIssues: [],
+        bundleVersion: bundle.bundleVersion ?? previous.bundleVersion,
+      };
+      await sqliteSyncMetadataRepository.saveConfigMetadata(metadata);
+      return { metadata };
+    }
+
+    const snapshotBefore = await captureConfigSnapshot();
     await persistPayload(payload);
+    const snapshotAfter = await captureConfigSnapshot();
+    const syncAt = new Date().toISOString();
+    const configChangelog = buildConfigSyncChangelog(snapshotBefore, snapshotAfter, syncAt);
 
     const metadata = buildMetadata(payload, 'success', null, {
       bundleVersion: bundle.bundleVersion,
       validationIssues: [],
+      configChangelog,
     });
     await sqliteSyncMetadataRepository.saveConfigMetadata(metadata);
     return { metadata };
@@ -356,6 +388,7 @@ export async function syncMasterConfig(actor: AppActor): Promise<SyncConfigResul
           err instanceof BundleValidationError ? err.validation.bundleVersion : null,
         validationIssues: issues,
         preserveLastSyncAt: previous.lastSyncAt,
+        preserveConfigChangelog: previous.configChangelog,
       });
       await sqliteSyncMetadataRepository.saveConfigMetadata(failedMetadata);
       throw err instanceof BundleValidationError ? err : new Error(message);
@@ -366,6 +399,7 @@ export async function syncMasterConfig(actor: AppActor): Promise<SyncConfigResul
       status,
       errorMessage: message,
       validationIssues: [message],
+      configChangelog: previous.configChangelog,
     };
     await sqliteSyncMetadataRepository.saveConfigMetadata(failedMetadata);
     throw new Error(message);

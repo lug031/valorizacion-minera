@@ -155,6 +155,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   setDefaults: async (partial) => {
+    if (typeof __DEV__ === 'undefined' || !__DEV__) {
+      throw new Error(
+        'La edición local de valores iniciales solo está disponible en desarrollo. Use la web y la sync automática.'
+      );
+    }
     const current = get();
     const previous = await configRepository.getAppSettings();
     const {
@@ -187,6 +192,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   reset: async () => {
+    if (typeof __DEV__ === 'undefined' || !__DEV__) {
+      throw new Error(
+        'Restaurar valores locales solo está disponible en desarrollo. Los valores vienen de la web.'
+      );
+    }
     const payload = buildReferenceAppSettings();
     set({ ...FALLBACK, ...EMPTY_INTER_META });
     await configRepository.saveAppSettings(payload);

@@ -1,5 +1,6 @@
 import type { SqlExecutor } from '../db/sql-executor';
 import { getSqlExecutor } from '../db/database';
+import type { ConfigSyncChangelog } from '../../services/sync/config-sync-changelog.types';
 import type { SyncMetadata, SyncStatus } from '../../services/sync/sync-config.types';
 
 interface SyncMetadataRow {
@@ -20,6 +21,18 @@ interface SyncMetadataRow {
   max_updated_at_provider_defaults: string | null;
   max_updated_at_app_settings: string | null;
   raw_checksum: string | null;
+  config_changelog_json: string | null;
+}
+
+function parseChangelog(json: string | null): ConfigSyncChangelog | null {
+  if (!json?.trim()) return null;
+  try {
+    const parsed = JSON.parse(json) as ConfigSyncChangelog;
+    if (!parsed?.syncAt || !Array.isArray(parsed.entries)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
 }
 
 function parseIssues(json: string | null): string[] {
@@ -51,6 +64,7 @@ function mapRow(row: SyncMetadataRow): SyncMetadata {
     maxUpdatedAtProviderDefaults: row.max_updated_at_provider_defaults,
     maxUpdatedAtAppSettings: row.max_updated_at_app_settings,
     rawChecksum: row.raw_checksum,
+    configChangelog: parseChangelog(row.config_changelog_json),
   };
 }
 
@@ -73,6 +87,7 @@ function defaultMetadata(): SyncMetadata {
     maxUpdatedAtProviderDefaults: null,
     maxUpdatedAtAppSettings: null,
     rawChecksum: null,
+    configChangelog: null,
   };
 }
 
@@ -95,8 +110,8 @@ export const sqliteSyncMetadataRepository = {
         key, last_sync_at, status, error_message, bundle_version, validation_issues_json,
         records_material_types, records_maquila_ranges, records_providers, records_provider_defaults, records_app_settings,
         max_updated_at_material_types, max_updated_at_maquila_ranges, max_updated_at_providers, max_updated_at_provider_defaults, max_updated_at_app_settings,
-        raw_checksum
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        raw_checksum, config_changelog_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         metadata.key,
         metadata.lastSyncAt,
@@ -115,6 +130,7 @@ export const sqliteSyncMetadataRepository = {
         metadata.maxUpdatedAtProviderDefaults,
         metadata.maxUpdatedAtAppSettings,
         metadata.rawChecksum,
+        metadata.configChangelog ? JSON.stringify(metadata.configChangelog) : null,
       ]
     );
   },

@@ -1,3 +1,5 @@
+import type { ConfigSyncChangelog } from './config-sync-changelog.types';
+
 export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error' | 'offline';
 
 export interface SyncMetadata {
@@ -20,6 +22,8 @@ export interface SyncMetadata {
   maxUpdatedAtProviderDefaults: string | null;
   maxUpdatedAtAppSettings: string | null;
   rawChecksum: string | null;
+  /** Cambios detectados en la última sincronización exitosa en este dispositivo. */
+  configChangelog: ConfigSyncChangelog | null;
 }
 
 export interface SyncConfigResult {

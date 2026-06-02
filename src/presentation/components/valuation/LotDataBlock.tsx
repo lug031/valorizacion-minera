@@ -7,12 +7,15 @@ import { CotizadorSection } from '../ui/CotizadorSection';
 import { FormNumberField } from '../ui/FormNumberField';
 import { ReadonlyMetricField } from '../ui/ReadonlyMetricField';
 import { cotizadorStyles } from '../../theme/cotizador-styles';
+import { CatalogValueHint } from './CatalogValueHint';
+import type { CatalogValueHint as CatalogValueHintType } from '../../utils/catalog-value-hint';
 
 interface Props {
   control: Control<ValuationFormValues>;
+  factorCurrentHint?: CatalogValueHintType | null;
 }
 
-export function LotDataBlock({ control }: Props) {
+export function LotDataBlock({ control, factorCurrentHint }: Props) {
   const tmh = useWatch({ control, name: 'tmh' });
   const h2o = useWatch({ control, name: 'h2oPercent' });
 
@@ -33,6 +36,7 @@ export function LotDataBlock({ control }: Props) {
       </View>
       <ReadonlyMetricField label="TMS (calculado)" value={tmsDisplay} highlight />
       <FormNumberField control={control} name="factor" label="Factor" />
+      <CatalogValueHint hint={factorCurrentHint ?? null} />
     </CotizadorSection>
   );
 }

@@ -8,6 +8,8 @@ import { FormNumberField } from '../ui/FormNumberField';
 import { MetalColumnHeader } from '../ui/MetalColumnHeader';
 import { CommercialSuggestionText } from '../ui/CommercialSuggestionText';
 import { InterSyncedHint } from './InterSyncedHint';
+import { CatalogValueHint } from './CatalogValueHint';
+import type { CatalogValueHint as CatalogValueHintType } from '../../utils/catalog-value-hint';
 import { cotizadorStyles } from '../../theme/cotizador-styles';
 import {
   formatMaquilaSuggestionLabel,
@@ -23,6 +25,12 @@ interface Props {
   onMaquilaEdit?: () => void;
   interGoldHint?: InterMetalHint | null;
   interSilverHint?: InterMetalHint | null;
+  interGoldCurrentHint?: CatalogValueHintType | null;
+  interSilverCurrentHint?: CatalogValueHintType | null;
+  rcGoldCurrentHint?: CatalogValueHintType | null;
+  rcSilverCurrentHint?: CatalogValueHintType | null;
+  consumosCurrentHint?: CatalogValueHintType | null;
+  fleteCurrentHint?: CatalogValueHintType | null;
 }
 
 function MetalCommercialColumn({
@@ -30,12 +38,16 @@ function MetalCommercialColumn({
   metal,
   rcSuggestionText,
   interHint,
+  interCurrentHint,
+  rcCurrentHint,
   alignRcRow,
 }: {
   control: Control<ValuationFormValues>;
   metal: 'gold' | 'silver';
   rcSuggestionText?: string | null;
   interHint?: InterMetalHint | null;
+  interCurrentHint?: CatalogValueHintType | null;
+  rcCurrentHint?: CatalogValueHintType | null;
   alignRcRow?: boolean;
 }) {
   const rc = metal === 'gold' ? 'scenario.rcGold' : 'scenario.rcSilver';
@@ -49,8 +61,10 @@ function MetalCommercialColumn({
         text={metal === 'gold' ? (rcSuggestionText ?? null) : null}
         reserveSpace={alignRcRow}
       />
+      <CatalogValueHint hint={rcCurrentHint ?? null} />
       <FormNumberField control={control} name={inter} label="INTER" />
-      <InterSyncedHint hint={interHint ?? null} />
+      <CatalogValueHint hint={interCurrentHint ?? null} />
+      <InterSyncedHint hint={interCurrentHint ? null : (interHint ?? null)} />
     </View>
   );
 }
@@ -63,6 +77,12 @@ export function CommercialParamsBlock({
   onMaquilaEdit,
   interGoldHint,
   interSilverHint,
+  interGoldCurrentHint,
+  interSilverCurrentHint,
+  rcGoldCurrentHint,
+  rcSilverCurrentHint,
+  consumosCurrentHint,
+  fleteCurrentHint,
 }: Props) {
   const rcHint =
     suggestedRcGold != null ? formatRcGoldSuggestionLabel(suggestedRcGold) : null;
@@ -81,6 +101,8 @@ export function CommercialParamsBlock({
             metal="gold"
             rcSuggestionText={rcHint}
             interHint={interGoldHint}
+            interCurrentHint={interGoldCurrentHint}
+            rcCurrentHint={rcGoldCurrentHint}
             alignRcRow={alignRcRow}
           />
         }
@@ -90,6 +112,8 @@ export function CommercialParamsBlock({
             metal="silver"
             rcSuggestionText={rcHint}
             interHint={interSilverHint}
+            interCurrentHint={interSilverCurrentHint}
+            rcCurrentHint={rcSilverCurrentHint}
             alignRcRow={alignRcRow}
           />
         }
@@ -119,7 +143,9 @@ export function CommercialParamsBlock({
           )}
         />
         <FormNumberField control={control} name="scenario.consumos" label="Consumos" />
+        <CatalogValueHint hint={consumosCurrentHint ?? null} />
         <FormNumberField control={control} name="scenario.flete" label="Flete" />
+        <CatalogValueHint hint={fleteCurrentHint ?? null} />
         <FormNumberField control={control} name="scenario.otrosCostos" label="Otros costos" />
       </View>
     </CotizadorSection>

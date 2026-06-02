@@ -10,6 +10,7 @@ interface MaterialTypeRow {
   is_active: number;
   sort_order: number;
   metadata_json: string | null;
+  updated_at?: string | null;
 }
 
 interface AppSettingsRow {
@@ -68,6 +69,7 @@ export function createSqliteConfigRepository(getDb: () => Promise<SqlExecutor>):
         isActive: r.is_active === 1,
         sortOrder: r.sort_order,
         metadataJson: r.metadata_json,
+        updatedAt: r.updated_at ?? null,
       }));
     },
 

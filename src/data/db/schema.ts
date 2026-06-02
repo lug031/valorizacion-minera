@@ -4,7 +4,7 @@
  */
 
 export const DB_NAME = 'valorizacion_minera.db';
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 11;
 
 export const CREATE_TABLES_SQL: readonly string[] = [
   `CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -58,7 +58,8 @@ export const CREATE_TABLES_SQL: readonly string[] = [
     label TEXT NOT NULL,
     is_active INTEGER NOT NULL DEFAULT 1,
     sort_order INTEGER NOT NULL DEFAULT 0,
-    metadata_json TEXT
+    metadata_json TEXT,
+    updated_at TEXT
   );`,
 
   `CREATE TABLE IF NOT EXISTS maquila_ranges (
@@ -67,7 +68,8 @@ export const CREATE_TABLES_SQL: readonly string[] = [
     max_ley_oz_tc TEXT NOT NULL,
     maquila TEXT NOT NULL,
     sort_order INTEGER NOT NULL DEFAULT 0,
-    is_active INTEGER NOT NULL DEFAULT 1
+    is_active INTEGER NOT NULL DEFAULT 1,
+    updated_at TEXT
   );`,
 
   `CREATE TABLE IF NOT EXISTS providers (
@@ -126,7 +128,8 @@ export const CREATE_TABLES_SQL: readonly string[] = [
     max_updated_at_app_settings TEXT,
     raw_checksum TEXT,
     bundle_version TEXT,
-    validation_issues_json TEXT
+    validation_issues_json TEXT,
+    config_changelog_json TEXT
   );`,
 
   `CREATE TABLE IF NOT EXISTS valuations (

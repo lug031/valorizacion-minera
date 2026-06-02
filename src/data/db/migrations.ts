@@ -206,4 +206,27 @@ export async function runMigrations(db: SqlExecutor): Promise<void> {
       );
     });
   }
+
+  if (currentVersion < 10) {
+    await db.withTransaction(async () => {
+      await addColumnIfMissing(db, 'sync_metadata', 'config_changelog_json', 'TEXT');
+
+      await db.run(
+        `INSERT OR REPLACE INTO schema_migrations (version, applied_at) VALUES (?, datetime('now'))`,
+        [10]
+      );
+    });
+  }
+
+  if (currentVersion < 11) {
+    await db.withTransaction(async () => {
+      await addColumnIfMissing(db, 'material_types', 'updated_at', 'TEXT');
+      await addColumnIfMissing(db, 'maquila_ranges', 'updated_at', 'TEXT');
+
+      await db.run(
+        `INSERT OR REPLACE INTO schema_migrations (version, applied_at) VALUES (?, datetime('now'))`,
+        [11]
+      );
+    });
+  }
 }

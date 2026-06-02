@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Button, Menu, Text, TextInput } from 'react-native-paper';
-import { Controller, type Control } from 'react-hook-form';
+import { Controller, useWatch, type Control } from 'react-hook-form';
 import type { ValuationFormValues } from '../../forms/valuation-form-schema';
 import { formatDisplayDate } from '../../utils/format';
 import { cotizadorStyles } from '../../theme/cotizador-styles';
 import { useConfigStore } from '../../store/config-store';
-import { getActiveMaterialTypesForUi } from '../../utils/material-type-options';
+import {
+  formatMaterialTypeButtonLabel,
+  getMaterialTypesForValuationPicker,
+} from '../../utils/material-type-options';
 
 const headerInputTheme = {
   colors: {
@@ -27,9 +30,11 @@ export function CotizadorHeaderBlock({ control, fechaReadOnly = true }: Props) {
   const materialTypes = useConfigStore((s) => s.materialTypes);
   const isHydrated = useConfigStore((s) => s.isHydrated);
 
+  const selectedMat = useWatch({ control, name: 'materialTypeCode' });
+
   const matOptions = useMemo(
-    () => getActiveMaterialTypesForUi(materialTypes, isHydrated),
-    [materialTypes, isHydrated]
+    () => getMaterialTypesForValuationPicker(materialTypes, isHydrated, selectedMat),
+    [materialTypes, isHydrated, selectedMat]
   );
 
   return (
@@ -108,7 +113,7 @@ export function CotizadorHeaderBlock({ control, fechaReadOnly = true }: Props) {
                     style={{ borderColor: '#c9a227', marginTop: 2 }}
                     onPress={() => setMatMenuOpen(true)}
                   >
-                    {value || 'MAT'}
+                    {formatMaterialTypeButtonLabel(value, materialTypes, isHydrated)}
                   </Button>
                 }
               >

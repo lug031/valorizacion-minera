@@ -150,11 +150,9 @@ async function pushOneRow(
   }
 }
 
-/**
- * Recupera filas huérfanas en `syncing` (app cerrada tras markSyncing, etc.)
- * antes de procesar la cola. Reintento seguro: el servidor deduplica por mobileId.
- */
-export async function syncPendingValuations(): Promise<SyncValuationsResult> {
+let syncInFlight: Promise<SyncValuationsResult> | null = null;
+
+async function runSyncPendingValuations(): Promise<SyncValuationsResult> {
   const result: SyncValuationsResult = {
     attempted: 0,
     synced: 0,
@@ -212,6 +210,23 @@ export async function syncPendingValuations(): Promise<SyncValuationsResult> {
   }
 
   return result;
+}
+
+/**
+ * Recupera filas huérfanas en `syncing` antes de procesar la cola.
+ * Una sola ejecución a la vez (evita carrera entre envío automático y botón manual).
+ */
+export async function syncPendingValuations(): Promise<SyncValuationsResult> {
+  if (syncInFlight) return syncInFlight;
+  syncInFlight = runSyncPendingValuations().finally(() => {
+    syncInFlight = null;
+  });
+  return syncInFlight;
+}
+
+/** Espera si hay un envío en curso (p. ej. al abrir Historial tras guardar). */
+export async function waitForValuationSyncIfRunning(): Promise<void> {
+  if (syncInFlight) await syncInFlight;
 }
 
 /** Intenta subir cotizaciones pendientes sin bloquear la UI. */

@@ -6,6 +6,7 @@ export interface MaquilaRange {
   maquila: string;
   sortOrder?: number;
   isActive?: boolean;
+  updatedAt?: string | null;
 }
 
 /** Tipo de material — clasificación; no altera fórmulas en v1. */
@@ -17,6 +18,7 @@ export interface MaterialType {
   sortOrder: number;
   /** Reservado: defaults por tipo MAT en versiones futuras. */
   metadataJson?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface Provider {

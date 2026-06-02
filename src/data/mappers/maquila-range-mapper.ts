@@ -7,6 +7,7 @@ export interface MaquilaRangeRow {
   maquila: string;
   sort_order: number;
   is_active: number;
+  updated_at?: string | null;
 }
 
 export function rowToMaquilaRange(row: MaquilaRangeRow): MaquilaRange {
@@ -17,5 +18,6 @@ export function rowToMaquilaRange(row: MaquilaRangeRow): MaquilaRange {
     maquila: row.maquila,
     sortOrder: row.sort_order,
     isActive: row.is_active === 1,
+    updatedAt: row.updated_at ?? null,
   };
 }

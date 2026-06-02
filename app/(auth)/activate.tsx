@@ -14,6 +14,7 @@ import {
   EnrollmentError,
 } from '../../src/services/device/device-enrollment.service';
 import { refreshDeviceBindingGate } from '../../src/services/device/refresh-device-binding';
+import { scheduleForegroundSync } from '../../src/services/sync/foreground-sync.service';
 
 export default function ActivateDeviceScreen() {
   const { user, login, isLoading } = useAuthStore();
@@ -52,6 +53,7 @@ export default function ActivateDeviceScreen() {
       const ok = await login(username.trim(), password);
       if (ok) {
         await refreshDeviceBindingGate();
+        scheduleForegroundSync({ forceConfig: true });
         const gate = useDeviceBindingStore.getState().gateStatus;
         router.replace(gate === 'blocked' ? '/(auth)/device-blocked' : '/(app)/dashboard');
       } else {

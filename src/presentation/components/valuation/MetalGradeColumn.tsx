@@ -6,14 +6,17 @@ import { TextInput, HelperText } from 'react-native-paper';
 import type { ValuationFormValues } from '../../forms/valuation-form-schema';
 import { FormNumberField } from '../ui/FormNumberField';
 import { MetalColumnHeader } from '../ui/MetalColumnHeader';
+import { CatalogValueHint } from './CatalogValueHint';
+import type { CatalogValueHint as CatalogValueHintType } from '../../utils/catalog-value-hint';
 import { grTmToOzTcInput, ozTcToGrTmDisplay } from '../../utils/grade-display';
 
 interface Props {
   control: Control<ValuationFormValues>;
   metal: 'gold' | 'silver';
+  recCurrentHint?: CatalogValueHintType | null;
 }
 
-export function MetalGradeColumn({ control, metal }: Props) {
+export function MetalGradeColumn({ control, metal, recCurrentHint }: Props) {
   const ozField: FieldPath<ValuationFormValues> =
     metal === 'gold' ? 'goldGradeOzTc' : 'silverGradeOzTc';
   const recField: FieldPath<ValuationFormValues> =
@@ -58,6 +61,7 @@ export function MetalGradeColumn({ control, metal }: Props) {
         )}
       />
       <FormNumberField control={control} name={recField} label="REC %" />
+      <CatalogValueHint hint={recCurrentHint ?? null} />
     </View>
   );
 }

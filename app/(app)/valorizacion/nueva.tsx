@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import { router, Stack, useFocusEffect } from 'expo-router';
@@ -16,13 +16,17 @@ import { ScenarioTabs } from '../../../src/presentation/components/valuation/Sce
 import { useSettingsStore } from '../../../src/presentation/store/settings-store';
 import { useSyncStore } from '../../../src/presentation/store/sync-store';
 import { buildInterMetalHint } from '../../../src/presentation/utils/inter-sync-hint';
+import { buildCatalogValueHint } from '../../../src/presentation/utils/catalog-value-hint';
+import { SyncStatusBanners } from '../../../src/presentation/components/config/SyncStatusBanners';
 import { screenPadding } from '../../../src/presentation/theme/app-theme';
 import { isScenarioComparisonUiVisible } from '../../../src/config/scenario-comparison-access';
 
 export default function NewValuationScreen() {
   const draft = useValuationDraftStore((s) => s.draft);
+  const editingValuationId = useValuationDraftStore((s) => s.editingValuationId);
   const settings = useSettingsStore();
   const lastSyncAt = useSyncStore((s) => s.metadata?.lastSyncAt ?? null);
+  const isEditing = Boolean(editingValuationId);
 
   const interMeta = {
     interGoldSource: settings.interGoldSource,
@@ -32,8 +36,6 @@ export default function NewValuationScreen() {
     interFetchStatus: settings.interFetchStatus,
     interFetchError: settings.interFetchError,
   };
-  const interGoldHint = buildInterMetalHint('gold', settings.interGold, interMeta, lastSyncAt);
-  const interSilverHint = buildInterMetalHint('silver', settings.interSilver, interMeta, lastSyncAt);
 
   const {
     form,
@@ -47,6 +49,51 @@ export default function NewValuationScreen() {
     suggestedRcGold,
     goldGradeOzTc,
   } = useValuationForm();
+
+  const watched = form.watch();
+  const scenario = watched.scenario;
+
+  const interGoldHint =
+    !isEditing && buildInterMetalHint('gold', settings.interGold, interMeta, lastSyncAt);
+  const interSilverHint =
+    !isEditing && buildInterMetalHint('silver', settings.interSilver, interMeta, lastSyncAt);
+
+  const editHints = useMemo(() => {
+    if (!isEditing) return null;
+    return {
+      factor: buildCatalogValueHint(watched.factor, settings.factor, { label: 'Factor comercial' }),
+      recGold: buildCatalogValueHint(watched.recPercentGold, settings.recPercentGold, {
+        label: 'REC oro',
+      }),
+      recSilver: buildCatalogValueHint(watched.recPercentSilver, settings.recPercentSilver, {
+        label: 'REC plata',
+      }),
+      rcGold: buildCatalogValueHint(scenario?.rcGold, settings.rcGold, {
+        label: 'RC oro',
+        valuePrefix: 'US$',
+      }),
+      rcSilver: buildCatalogValueHint(scenario?.rcSilver, settings.rcSilver, {
+        label: 'RC plata',
+        valuePrefix: 'US$',
+      }),
+      interGold: buildCatalogValueHint(scenario?.interGold, settings.interGold, {
+        label: 'INTER oro',
+        valuePrefix: 'US$',
+      }),
+      interSilver: buildCatalogValueHint(scenario?.interSilver, settings.interSilver, {
+        label: 'INTER plata',
+        valuePrefix: 'US$',
+      }),
+      consumos: buildCatalogValueHint(scenario?.consumos, settings.consumos, {
+        label: 'Consumos',
+        valuePrefix: 'US$',
+      }),
+      flete: buildCatalogValueHint(scenario?.flete, settings.flete, {
+        label: 'Flete',
+        valuePrefix: 'US$',
+      }),
+    };
+  }, [isEditing, watched, scenario, settings]);
 
   useFocusEffect(
     useCallback(() => {
@@ -84,6 +131,8 @@ export default function NewValuationScreen() {
         keyboardShouldPersistTaps="handled"
         style={styles.scrollBg}
       >
+        <SyncStatusBanners showValuationOutbox={false} />
+
         <CotizadorHeaderBlock control={control} />
 
         {showComparison ? (
@@ -102,8 +151,12 @@ export default function NewValuationScreen() {
           </View>
         ) : null}
 
-        <LotDataBlock control={control} />
-        <GradesRecoveryBlock control={control} />
+        <LotDataBlock control={control} factorCurrentHint={editHints?.factor ?? null} />
+        <GradesRecoveryBlock
+          control={control}
+          recGoldCurrentHint={editHints?.recGold ?? null}
+          recSilverCurrentHint={editHints?.recSilver ?? null}
+        />
         <CommercialParamsBlock
           control={control}
           goldGradeOzTc={goldGradeOzTc}
@@ -112,6 +165,12 @@ export default function NewValuationScreen() {
           onMaquilaEdit={onMaquilaManualEdit}
           interGoldHint={interGoldHint}
           interSilverHint={interSilverHint}
+          interGoldCurrentHint={editHints?.interGold ?? null}
+          interSilverCurrentHint={editHints?.interSilver ?? null}
+          rcGoldCurrentHint={editHints?.rcGold ?? null}
+          rcSilverCurrentHint={editHints?.rcSilver ?? null}
+          consumosCurrentHint={editHints?.consumos ?? null}
+          fleteCurrentHint={editHints?.flete ?? null}
         />
         <ValuationResultsPanel result={result} scenario={activeScenario} />
 

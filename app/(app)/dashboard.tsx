@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import { router, useFocusEffect } from 'expo-router';
@@ -7,12 +7,14 @@ import type { AuthUser } from '../../src/presentation/services/auth/auth-service
 import { useAuthStore } from '../../src/presentation/store/auth-store';
 import { useSettingsStore } from '../../src/presentation/store/settings-store';
 import { useValuationDraftStore } from '../../src/presentation/store/valuation-draft-store';
+import { useSyncStore } from '../../src/presentation/store/sync-store';
 import { ScreenHeader } from '../../src/presentation/components/ui/ScreenHeader';
 import { screenPadding } from '../../src/presentation/theme/app-theme';
-import { canManageSettings, canSyncMasterConfig } from '../../src/presentation/utils/role-access';
+import { canManageSettings } from '../../src/presentation/utils/role-access';
+import { SyncStatusBanners } from '../../src/presentation/components/config/SyncStatusBanners';
 import { canUseScenarioComparison } from '../../src/config/scenario-comparison-access';
-import { valuationRepository } from '../../src/data/repositories';
-import { formatSyncQueueBanner } from '../../src/presentation/utils/format-sync-queue-summary';
+import { getLastSeenChangelogSyncAt } from '../../src/infrastructure/config/changelog-seen-store';
+import { unreadCommercialUpdatesCount } from '../../src/presentation/utils/commercial-updates-unread';
 
 function sessionSubtitle(user: AuthUser | null | undefined, isAdmin: boolean): string {
   if (!user) return isAdmin ? 'Perfil administrador' : 'Operador de campo';
@@ -22,7 +24,7 @@ function sessionSubtitle(user: AuthUser | null | undefined, isAdmin: boolean): s
       : 'Operador de campo · usuario registrado en la web';
   }
   if (user.authSource === 'local_seed' && isAdmin) {
-    return 'Actualice los usuarios desde Configuración antes de operar en equipo';
+    return 'Cuenta local de prueba (solo desarrollo)';
   }
   return isAdmin ? 'Perfil administrador' : 'Operador de campo';
 }
@@ -31,24 +33,33 @@ export default function DashboardScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const settings = useSettingsStore();
+  const syncMetadata = useSyncStore((s) => s.metadata);
+  const hydrateSync = useSyncStore((s) => s.hydrate);
   const initDraft = useValuationDraftStore((s) => s.initDraft);
   const isAdmin = canManageSettings(user?.role);
-  const canSync = canSyncMasterConfig(user?.role);
   const comparisonProductEnabled = canUseScenarioComparison();
   const showSeedBootstrapBanner =
     typeof __DEV__ !== 'undefined' &&
     __DEV__ &&
     isAdmin &&
     user?.authSource === 'local_seed';
-  const [outboxBanner, setOutboxBanner] = useState<string | null>(null);
+  const [unreadUpdates, setUnreadUpdates] = useState(0);
+
+  const refreshUnread = useCallback(async () => {
+    await hydrateSync();
+    const lastSeen = await getLastSeenChangelogSyncAt();
+    setUnreadUpdates(unreadCommercialUpdatesCount(useSyncStore.getState().metadata, lastSeen));
+  }, [hydrateSync]);
 
   useFocusEffect(
     useCallback(() => {
-      void valuationRepository.countSyncQueue().then((q) => {
-        setOutboxBanner(formatSyncQueueBanner(q));
-      });
-    }, [])
+      void refreshUnread();
+    }, [refreshUnread])
   );
+
+  useEffect(() => {
+    void refreshUnread();
+  }, [syncMetadata?.configChangelog?.syncAt, refreshUnread]);
 
   const startNew = () => {
     initDraft(
@@ -68,6 +79,11 @@ export default function DashboardScreen() {
     router.push('/(app)/valorizacion/nueva');
   };
 
+  const updatesLabel =
+    unreadUpdates > 0
+      ? `Actualizaciones comerciales (${unreadUpdates} nuevo${unreadUpdates === 1 ? '' : 's'})`
+      : 'Actualizaciones comerciales';
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.inner}>
@@ -75,18 +91,12 @@ export default function DashboardScreen() {
           title={`Hola, ${user?.displayName ?? 'Usuario'}`}
           subtitle={sessionSubtitle(user, isAdmin)}
         />
+        <SyncStatusBanners showValuationOutbox />
         {showSeedBootstrapBanner ? (
           <View style={styles.banner}>
             <Text variant="bodySmall" style={styles.bannerText}>
-              Cree su usuario móvil en la web (Usuarios de campo), luego use Configuración → Actualizar
-              usuarios de campo en este teléfono. Después cierre sesión e ingrese con su usuario de campo.
-            </Text>
-          </View>
-        ) : null}
-        {outboxBanner ? (
-          <View style={styles.outboxBanner}>
-            <Text variant="bodySmall" style={styles.outboxBannerText}>
-              {outboxBanner}. Revise Historial o Sincronizar configuración.
+              Modo desarrollo: la cuenta local de prueba no envía cotizaciones al panel. Cree su usuario en la
+              web, active el dispositivo e ingrese con ese usuario (no use la cuenta seed en release).
             </Text>
           </View>
         ) : null}
@@ -122,21 +132,14 @@ export default function DashboardScreen() {
         <Button mode="outlined" onPress={() => router.push('/(app)/historial')} style={styles.btn} contentStyle={styles.btnContent}>
           Historial de cotizaciones
         </Button>
-        {isAdmin ? (
-          <Button mode="outlined" onPress={() => router.push('/(app)/configuracion')} style={styles.btn} contentStyle={styles.btnContent}>
-            Configuración
-          </Button>
-        ) : null}
-        {canSync ? (
-          <Button
-            mode="outlined"
-            onPress={() => router.push('/(app)/sincronizar-configuracion')}
-            style={styles.btn}
-            contentStyle={styles.btnContent}
-          >
-            Sincronizar configuración
-          </Button>
-        ) : null}
+        <Button
+          mode="outlined"
+          onPress={() => router.push('/(app)/configuracion')}
+          style={styles.btn}
+          contentStyle={styles.btnContent}
+        >
+          {updatesLabel}
+        </Button>
         <Button mode="text" onPress={async () => { await logout(); router.replace('/(auth)/login'); }} style={{ marginTop: 24 }}>
           Cerrar sesión
         </Button>
@@ -157,15 +160,6 @@ const styles = StyleSheet.create({
     borderColor: '#fed7aa',
   },
   bannerText: { lineHeight: 18, color: '#9a3412' },
-  outboxBanner: {
-    marginBottom: 16,
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: '#fffbeb',
-    borderWidth: 1,
-    borderColor: '#fde68a',
-  },
-  outboxBannerText: { lineHeight: 18, color: '#92400e' },
   btn: { marginBottom: 12 },
   btnContent: { paddingVertical: 10 },
 });

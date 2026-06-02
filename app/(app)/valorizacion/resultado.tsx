@@ -3,6 +3,7 @@ import * as Crypto from 'expo-crypto';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, HelperText, Text } from 'react-native-paper';
 import { router, Stack } from 'expo-router';
+import NetInfo from '@react-native-community/netinfo';
 import { useValuationDraftStore } from '../../../src/presentation/store/valuation-draft-store';
 import { ValuationResultsPanel } from '../../../src/presentation/components/valuation/ValuationResultsPanel';
 import { ScenarioComparisonCard } from '../../../src/presentation/components/valuation/ScenarioComparisonCard';
@@ -122,8 +123,13 @@ export default function ResultadoScreen() {
           createdAt: now,
           updatedAt: now,
         });
-        router.dismissTo('/(app)/historial');
-        scheduleValuationSync();
+        const net = await NetInfo.fetch();
+        const connected = net.isConnected ?? false;
+        router.dismissTo({
+          pathname: '/(app)/historial',
+          params: connected ? {} : { saved: String(Date.now()) },
+        });
+        if (connected) scheduleValuationSync();
       }
 
       clearDraft();

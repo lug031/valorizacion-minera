@@ -23,6 +23,7 @@ const baseMetadata: SyncMetadata = {
   maxUpdatedAtProviderDefaults: null,
   maxUpdatedAtAppSettings: null,
   rawChecksum: null,
+  configChangelog: null,
 };
 
 describe('sync-records-display', () => {

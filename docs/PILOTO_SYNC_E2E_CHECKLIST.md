@@ -2,7 +2,14 @@
 
 Dispositivo con build que incluye el slice de sync. Panel web desplegado con la misma API.
 
-## Caso A — Offline → online → web
+## Caso A — Config maestra (admin y operador)
+
+- [ ] Dispositivo activado y red: sync automática al abrir app / primer plano / recuperar conexión (sin pantalla «Sincronizar configuración»).
+- [ ] Sin red: banner pide activar internet.
+- [ ] **Actualizaciones comerciales**: tras sync con cambios, lista valor anterior/nuevo y fechas (INTER, factor, MAT, maquila).
+- [ ] Nueva cotización usa defaults post-sync; edición conserva valores guardados + hints «Valor actual» si difieren.
+
+## Caso B — Offline → online → web (cotizaciones)
 
 - [ ] Dispositivo activado y usuario con `cloud_user_id` (no seed local).
 - [ ] Sin red: crear y guardar una valorización nueva.
@@ -11,36 +18,44 @@ Dispositivo con build que incluye el slice de sync. Panel web desplegado con la 
 - [ ] Historial: estado `synced`.
 - [ ] Panel web: aparece la cotización con mismo código y `mobileId` coherente.
 
-## Caso B — Doble envío (idempotencia)
+## Caso C — Doble envío (idempotencia)
 
 - [ ] Con una cotización `pending`, pulsar «Enviar al panel» dos veces seguidas.
 - [ ] En web solo existe **un** registro para ese `mobileId`.
 - [ ] En móvil queda `synced` sin error.
 
-## Caso C — Dispositivo revocado
+## Caso D — Dispositivo revocado
 
 - [ ] Revocar dispositivo en panel web.
 - [ ] En móvil, intentar enviar cotización pendiente.
 - [ ] Resultado: error claro (teléfono no autorizado), estado local `error`, **no** `synced`.
 - [ ] Web: no se crean cotizaciones nuevas tras revocación.
 
-## Caso D — Usuario local seed
+## Caso E — Usuario local seed (solo desarrollo)
 
-- [ ] Operar con usuario `local_seed` (sin paso «Sincronizar usuarios»).
+- [ ] Operar con usuario `local_seed` (sin `cloud_user_id`).
 - [ ] Guardar cotización: queda `pending` en SQLite.
-- [ ] «Enviar al panel»: omitida con mensaje de sincronizar usuarios; contador «Omitidas (sin usuario central)» ≥ 1 en Configuración → paso 3.
-- [ ] Tras sincronizar usuarios y login con usuario provisionado, reenviar: debe subir.
+- [ ] Envío omitido: mensaje en Historial indicando usuario no vinculado al sistema central.
 
-## Caso E — Recuperación `syncing` atascado
+## Caso F — Recuperación `syncing` atascado
 
 - [ ] Simular interrupción: forzar `sync_status = 'syncing'` en SQLite (o cerrar app durante envío).
 - [ ] Iniciar envío de nuevo.
 - [ ] La fila vuelve a `pending` y se reintenta; termina en `synced` o `error`, nunca permanece en `syncing`.
 
-## Caso F — Diagnóstico en app
+## Caso G — Diagnóstico en app
 
-- [ ] Configuración → Sincronizar: bloque «Cola de envío» muestra pendientes, syncing, error y omitidas.
-- [ ] Dashboard / Historial: aviso si hay cola pendiente.
+- [ ] Dashboard: banners unificados (config + cola de envío, máx. 2).
+- [ ] Botón «Actualizaciones comerciales» muestra contador si hay changelog no visto.
+- [ ] Segunda sync sin cambios en web: no reescribe SQLite (checksum igual).
+
+## Caso H — Post-activación
+
+- [ ] Tras activar dispositivo con red: primera cotización usa valores de la web (no solo seed).
+
+## Caso I — Piloto real (no seed)
+
+- [ ] Probar siempre con usuario creado en web + código de activación, no cuenta `local_seed`.
 
 ## Registro de incidencias (piloto)
 

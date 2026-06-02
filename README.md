@@ -31,7 +31,18 @@ Escanea el QR con **Expo Go** (iPhone/Android). El proyecto usa **SDK 54** para 
 
 **APK privado (objetivo producción):** `npx expo prebuild` + EAS Build o Gradle local (no depende de Expo Go).
 
-Login mock: `operador` / `operador123` o `admin` / `admin123`
+Login mock (solo `__DEV__`): `operador` / `operador123` o `admin` / `admin123`. En **release** use activación de dispositivo con usuario creado en la web.
+
+### Sync y configuración comercial (producción)
+
+- Cada teléfono **activado** descarga automáticamente la config maestra de la web (INTER, factor, MAT, maquila) al tener internet.
+- Orden en segundo plano: **config maestra → envío de cotizaciones pendientes**.
+- Si el bundle de la web no cambió, no se reescribe SQLite ni el changelog.
+- Tras **activar dispositivo**, se fuerza una sync de config inmediata.
+- Pantalla **Actualizaciones comerciales**: diff de la última sync con cambios reales (valor anterior/nuevo y fechas).
+- Los valores iniciales de cotización vienen de la web; no se editan localmente en release.
+
+Checklist piloto: [docs/PILOTO_SYNC_E2E_CHECKLIST.md](./docs/PILOTO_SYNC_E2E_CHECKLIST.md)
 
 ## Motor de cálculo (verificado)
 

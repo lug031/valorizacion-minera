@@ -11,10 +11,9 @@ describe('isValuationSensitiveRoute', () => {
     expect(isValuationSensitiveRoute(['(app)', 'historial', 'abc-123'])).toBe(true);
   });
 
-  it('excluye dashboard, configuracion y sync', () => {
+  it('excluye dashboard y actualizaciones comerciales', () => {
     expect(isValuationSensitiveRoute(['(app)', 'dashboard'])).toBe(false);
     expect(isValuationSensitiveRoute(['(app)', 'configuracion'])).toBe(false);
-    expect(isValuationSensitiveRoute(['(app)', 'sincronizar-configuracion'])).toBe(false);
   });
 
   it('excluye auth', () => {
