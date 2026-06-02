@@ -87,7 +87,7 @@ export default function DashboardScreen() {
         {showSeedBootstrapBanner ? (
           <View style={styles.banner}>
             <Text variant="bodySmall" style={styles.bannerText}>
-              Modo desarrollo: la cuenta local de prueba no envía cotizaciones al panel. Cree su usuario en la
+              Modo desarrollo: la cuenta local de prueba no sincroniza cotizaciones con el servidor. Cree su usuario en la
               web, active el dispositivo e ingrese con ese usuario (no use la cuenta seed en release).
             </Text>
           </View>

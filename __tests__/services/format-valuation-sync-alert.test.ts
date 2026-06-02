@@ -11,11 +11,11 @@ const emptyResult: SyncValuationsResult = {
 };
 
 describe('formatValuationSyncAlert', () => {
-  it('explica envío automático cuando no hay pendientes tras el intento', () => {
+  it('explica sincronización automática cuando no hay pendientes tras el intento', () => {
     const msg = formatValuationSyncAlert(emptyResult, {
       queueAfter: { pending: 0, syncing: 0, error: 0, skippedNoCloudUser: 0 },
     });
-    expect(msg.message).toContain('envío automático');
+    expect(msg.message).toContain('sincronización automática');
   });
 
   it('indica problema de conexión si siguen pendientes sin intentos', () => {

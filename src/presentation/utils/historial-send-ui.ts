@@ -10,7 +10,7 @@ export interface HistorialSendUiState {
 }
 
 /**
- * Historial offline-first: aviso informativo sin red; botón solo si hay error de envío.
+ * Historial offline-first: aviso informativo sin red; botón solo si hay error de sincronización.
  */
 export function resolveHistorialSendUi(
   counts: ValuationSyncQueueCounts,
@@ -50,7 +50,7 @@ export function resolveHistorialSendUi(
     return {
       showBanner: true,
       showSendButton: true,
-      sendButtonLabel: 'Reintentar envío',
+      sendButtonLabel: 'Reintentar sincronización',
       bannerText: baseBanner,
     };
   }

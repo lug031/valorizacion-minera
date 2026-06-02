@@ -21,13 +21,13 @@ describe('resolveHistorialSendUi', () => {
   it('offline con pending: aviso sin botón', () => {
     const ui = resolveHistorialSendUi({ ...empty, pending: 2 }, false);
     expect(ui?.showSendButton).toBe(false);
-    expect(ui?.bannerText).toContain('Se subirán solas al tener internet');
+    expect(ui?.bannerText).toContain('Se sincronizarán solas al tener internet');
   });
 
   it('online con error: reintentar', () => {
     const ui = resolveHistorialSendUi({ ...empty, pending: 1, error: 1 }, true);
     expect(ui?.showSendButton).toBe(true);
-    expect(ui?.sendButtonLabel).toBe('Reintentar envío');
+    expect(ui?.sendButtonLabel).toBe('Reintentar sincronización');
   });
 
   it('solo omitidas: sin botón', () => {

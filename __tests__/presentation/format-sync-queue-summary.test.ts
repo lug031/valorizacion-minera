@@ -18,19 +18,19 @@ describe('formatSyncQueueBanner', () => {
 
   it('texto breve en dashboard online', () => {
     expect(formatSyncQueueBanner({ ...empty, pending: 2 }, { context: 'dashboard' })).toBe(
-      'Tiene 2 cotizaciones sin enviar al panel. Revise Historial.'
+      'Tiene 2 cotizaciones pendientes de sincronizar. Revise Historial.'
     );
   });
 
-  it('texto offline menciona envío al conectar', () => {
+  it('texto offline menciona sincronización al conectar', () => {
     expect(
       formatSyncQueueBanner({ ...empty, pending: 2 }, { context: 'dashboard', isConnected: false })
-    ).toContain('Se subirán solas al tener internet');
+    ).toContain('Se sincronizarán solas al tener internet');
   });
 
   it('texto breve en historial', () => {
     expect(formatSyncQueueBanner({ ...empty, pending: 1 }, { context: 'historial' })).toBe(
-      'Tiene 1 cotización sin enviar al panel.'
+      'Tiene 1 cotización pendiente de sincronizar.'
     );
   });
 
@@ -39,7 +39,7 @@ describe('formatSyncQueueBanner', () => {
       { pending: 2, syncing: 0, error: 1, skippedNoCloudUser: 2 },
       { context: 'dashboard' }
     );
-    expect(text).toContain('3 cotizaciones');
+    expect(text).toContain('3 cotizaciones pendientes de sincronizar');
     expect(text).toContain('1 con error');
     expect(text).toContain('actualizar usuarios');
   });
@@ -47,6 +47,8 @@ describe('formatSyncQueueBanner', () => {
 
 describe('formatSyncQueueDiagnostics', () => {
   it('detalle completo en sincronizar', () => {
-    expect(formatSyncQueueDiagnostics({ ...empty, pending: 3 })).toContain('Pendientes: 3');
+    expect(formatSyncQueueDiagnostics({ ...empty, pending: 3 })).toContain(
+      'Pendientes de sincronizar: 3'
+    );
   });
 });

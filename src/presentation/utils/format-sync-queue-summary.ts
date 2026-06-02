@@ -3,8 +3,9 @@ import { totalAwaitingPanel } from '../../data/repositories/valuation-sync-queue
 
 export type SyncQueueBannerContext = 'dashboard' | 'historial';
 
-function cotizacionesLabel(count: number): string {
-  return count === 1 ? '1 cotización' : `${count} cotizaciones`;
+function pendingSyncSummary(count: number): string {
+  if (count === 1) return '1 cotización pendiente de sincronizar';
+  return `${count} cotizaciones pendientes de sincronizar`;
 }
 
 export interface SyncQueueBannerOptions {
@@ -21,13 +22,14 @@ export function formatSyncQueueBanner(
   const total = totalAwaitingPanel(counts);
   if (total === 0) return null;
 
+  const summary = pendingSyncSummary(total);
   let base: string;
   if (!isConnected) {
-    base = `Tiene ${cotizacionesLabel(total)} sin enviar al panel. Se subirán solas al tener internet.`;
+    base = `Tiene ${summary}. Se sincronizarán solas al tener internet.`;
   } else if (context === 'historial') {
-    base = `Tiene ${cotizacionesLabel(total)} sin enviar al panel.`;
+    base = `Tiene ${summary}.`;
   } else {
-    base = `Tiene ${cotizacionesLabel(total)} sin enviar al panel. Revise Historial.`;
+    base = `Tiene ${summary}. Revise Historial.`;
   }
 
   const extras: string[] = [];
@@ -45,15 +47,15 @@ export function formatSyncQueueBanner(
 /** Detalle para pantalla de administración / sincronizar. */
 export function formatSyncQueueDiagnostics(counts: ValuationSyncQueueCounts): string {
   const lines = [
-    `Pendientes: ${counts.pending}`,
-    `En envío (syncing): ${counts.syncing}`,
+    `Pendientes de sincronizar: ${counts.pending}`,
+    `En sincronización: ${counts.syncing}`,
     `Con error: ${counts.error}`,
     `Omitidas (sin usuario central): ${counts.skippedNoCloudUser}`,
   ];
   const total = totalAwaitingPanel(counts);
-  if (total === 0) return 'Ninguna cotización pendiente de envío en este teléfono.';
+  if (total === 0) return 'Ninguna cotización pendiente de sincronización en este teléfono.';
   return lines.join('\n');
 }
 
 export const SAVE_OFFLINE_HISTORIAL_NOTICE =
-  'Guardada en este teléfono. Se enviará al panel cuando haya internet.';
+  'Guardada en este teléfono. Se sincronizará cuando haya internet.';

@@ -3,15 +3,15 @@ export type ValuationOutboxStatus = 'pending' | 'syncing' | 'synced' | 'error' |
 export function valuationPanelSyncLabel(status: ValuationOutboxStatus | null | undefined): string {
   switch (status) {
     case 'synced':
-      return 'Enviada al panel';
+      return 'Sincronizada';
     case 'pending':
-      return 'Pendiente de envío';
+      return 'Pendiente de sincronizar';
     case 'syncing':
-      return 'Enviando…';
+      return 'Sincronizando…';
     case 'error':
-      return 'Error al enviar';
+      return 'Error al sincronizar';
     default:
-      return 'Pendiente de envío';
+      return 'Pendiente de sincronizar';
   }
 }
 
