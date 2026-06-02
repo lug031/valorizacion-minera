@@ -15,7 +15,7 @@ const snapshot: ConfigSyncSnapshot = {
     updatedAt: '2026-05-31T12:00:00.000Z',
   },
   materialTypes: [
-    { code: 'MSC', label: 'MSC', isActive: true, updatedAt: null },
+    { code: 'MSC', label: 'MSC', isActive: false, updatedAt: '2026-05-31T12:00:00.000Z' },
     { code: 'MOC', label: 'MOC', isActive: true, updatedAt: null },
   ],
   maquilaRanges: [
@@ -31,14 +31,14 @@ const snapshot: ConfigSyncSnapshot = {
 };
 
 describe('buildCommercialCatalogView', () => {
-  it('lista todos los valores iniciales y marca solo los cambiados', () => {
+  it('lista todos los valores iniciales con labels fijos y marca solo los cambiados', () => {
     const sections = buildCommercialCatalogView(snapshot, {
       syncAt: '2026-05-31T12:05:00.000Z',
       entries: [
         {
           id: 'settings.defaultInterGold',
           category: 'valores_iniciales',
-          label: 'INTER oro',
+          label: 'INTER oro (viejo label changelog)',
           previousValue: 'US$ 4419.45',
           newValue: 'US$ 4420.12',
           previousRecordedAt: '2026-05-01T10:00:00.000Z',
@@ -49,14 +49,63 @@ describe('buildCommercialCatalogView', () => {
     });
 
     const settings = sections.find((s) => s.category === 'valores_iniciales');
+    expect(settings?.displayMode).toBe('full_catalog');
     expect(settings?.rows.length).toBe(9);
     expect(countCatalogChanges(sections)).toBe(1);
 
     const inter = settings?.rows.find((r) => r.id === 'settings.defaultInterGold');
     expect(inter?.status).toBe('changed');
+    expect(inter?.label).toBe('INTER oro');
 
     const factor = settings?.rows.find((r) => r.id === 'settings.factor');
     expect(factor?.status).toBe('unchanged');
     expect(factor?.currentValue).toBe('1.05');
+    expect(factor?.label).toBe('Factor comercial');
+  });
+
+  it('en tipos MAT sin cambios no lista valores', () => {
+    const sections = buildCommercialCatalogView(snapshot, {
+      syncAt: '2026-05-31T12:05:00.000Z',
+      entries: [],
+    });
+
+    const mat = sections.find((s) => s.category === 'tipo_mat');
+    expect(mat?.displayMode).toBe('changes_only');
+    expect(mat?.rows).toEqual([]);
+    expect(mat?.changedCount).toBe(0);
+  });
+
+  it('en tipos MAT solo muestra filas con cambios', () => {
+    const sections = buildCommercialCatalogView(snapshot, {
+      syncAt: '2026-05-31T12:05:00.000Z',
+      entries: [
+        {
+          id: 'mat.status.MSC',
+          category: 'tipo_mat',
+          label: 'label changelog',
+          previousValue: 'Activo',
+          newValue: 'Inactivo',
+          previousRecordedAt: null,
+          newRecordedAt: '2026-05-31T12:00:00.000Z',
+          syncAt: '2026-05-31T12:05:00.000Z',
+        },
+      ],
+    });
+
+    const mat = sections.find((s) => s.category === 'tipo_mat');
+    expect(mat?.rows.length).toBe(1);
+    expect(mat?.rows[0]?.label).toBe('Tipo MAT «MSC»');
+    expect(mat?.rows[0]?.currentValue).toBe('MSC · Inactivo');
+  });
+
+  it('en maquila sin cambios no lista valores', () => {
+    const sections = buildCommercialCatalogView(snapshot, {
+      syncAt: '2026-05-31T12:05:00.000Z',
+      entries: [],
+    });
+
+    const maquila = sections.find((s) => s.category === 'maquila');
+    expect(maquila?.rows).toEqual([]);
+    expect(maquila?.changedCount).toBe(0);
   });
 });

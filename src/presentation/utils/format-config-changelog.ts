@@ -1,15 +1,8 @@
 import type { ConfigChangeEntry } from '../../services/sync/config-sync-changelog.types';
+import { formatPeruDateTime } from '../../utils/peru-datetime';
 
 export function formatConfigChangeTimestamp(iso: string | null | undefined): string {
-  if (!iso?.trim()) return '—';
-  try {
-    return new Date(iso).toLocaleString('es-PE', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    });
-  } catch {
-    return iso;
-  }
+  return formatPeruDateTime(iso);
 }
 
 export function formatConfigChangeValue(value: string | null | undefined): string {

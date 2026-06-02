@@ -8,15 +8,7 @@ export interface MasterConfigBannerState {
 export function resolveMasterConfigBanner(input: {
   isConnected: boolean;
   metadata: SyncMetadata | null;
-  configLoading: boolean;
 }): MasterConfigBannerState | null {
-  if (input.configLoading) {
-    return {
-      tone: 'info',
-      message: 'Actualizando valores comerciales desde la web…',
-    };
-  }
-
   if (!input.isConnected) {
     return {
       tone: 'warning',

@@ -1,5 +1,6 @@
 import { INTER_SOURCE_LABELS } from '../../domain/constants/inter-metadata';
 import type { InterSyncMetadata } from '../store/settings-store';
+import { formatPeruDateTime } from '../../utils/peru-datetime';
 
 export type InterHintMode = 'synced_detail';
 
@@ -12,11 +13,7 @@ export interface InterMetalHint {
 
 function formatTimestamp(iso: string | null | undefined): string | null {
   if (!iso?.trim()) return null;
-  try {
-    return new Date(iso).toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' });
-  } catch {
-    return iso;
-  }
+  return formatPeruDateTime(iso);
 }
 
 function sourceLabel(source: string | null | undefined): string | null {

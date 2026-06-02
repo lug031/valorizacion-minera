@@ -5,7 +5,6 @@ describe('resolveMasterConfigBanner', () => {
     const banner = resolveMasterConfigBanner({
       isConnected: false,
       metadata: null,
-      configLoading: false,
     });
     expect(banner?.message).toMatch(/internet/i);
   });
@@ -33,8 +32,34 @@ describe('resolveMasterConfigBanner', () => {
         rawChecksum: null,
         configChangelog: null,
       },
-      configLoading: false,
     });
     expect(banner?.message).toMatch(/descargado/i);
+  });
+
+  it('no muestra banner de carga', () => {
+    const banner = resolveMasterConfigBanner({
+      isConnected: true,
+      metadata: {
+        key: 'config',
+        lastSyncAt: '2026-01-01T00:00:00.000Z',
+        status: 'success',
+        errorMessage: null,
+        bundleVersion: '1',
+        validationIssues: [],
+        recordsMaterialTypes: 1,
+        recordsMaquilaRanges: 1,
+        recordsProviders: 0,
+        recordsProviderDefaults: 0,
+        recordsAppSettings: 1,
+        maxUpdatedAtMaterialTypes: null,
+        maxUpdatedAtMaquilaRanges: null,
+        maxUpdatedAtProviders: null,
+        maxUpdatedAtProviderDefaults: null,
+        maxUpdatedAtAppSettings: null,
+        rawChecksum: 'x',
+        configChangelog: null,
+      },
+    });
+    expect(banner).toBeNull();
   });
 });

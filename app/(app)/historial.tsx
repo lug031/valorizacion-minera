@@ -186,7 +186,7 @@ export default function HistorialScreen() {
               <Card.Content>
                 <Text variant="titleMedium">{item.code}</Text>
                 <Text>
-                  {formatDisplayDate(item.createdAt.slice(0, 10))} · {item.materialTypeCode}
+                  {formatDisplayDate(item.createdAt)} · {item.materialTypeCode}
                 </Text>
                 {item.providerName ? <Text>{item.providerName}</Text> : null}
                 <Text>TMS: {item.tms ?? '—'}</Text>

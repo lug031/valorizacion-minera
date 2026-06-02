@@ -34,14 +34,18 @@ const TONE_PRIORITY: Record<BannerTone, number> = {
 interface Props {
   /** Si false, no muestra aviso de cola de envío de cotizaciones. */
   showValuationOutbox?: boolean;
+  /** Solo en Actualizaciones comerciales: avisos de sync de valores maestros. */
+  showCommercialConfigStatus?: boolean;
 }
 
 /**
- * Banners de sync: config maestra (prioridad) y cola de cotizaciones (máx. 2 visibles).
+ * Banners de sync: cola de cotizaciones; opcionalmente estado de config maestra.
  */
-export function SyncStatusBanners({ showValuationOutbox = true }: Props) {
+export function SyncStatusBanners({
+  showValuationOutbox = true,
+  showCommercialConfigStatus = false,
+}: Props) {
   const metadata = useSyncStore((s) => s.metadata);
-  const configLoading = useSyncStore((s) => s.loading);
   const [isConnected, setIsConnected] = useState(true);
   const [outboxBanner, setOutboxBanner] = useState<string | null>(null);
 
@@ -84,11 +88,9 @@ export function SyncStatusBanners({ showValuationOutbox = true }: Props) {
 
   const items: BannerItem[] = [];
 
-  const configBanner = resolveMasterConfigBanner({
-    isConnected,
-    metadata,
-    configLoading,
-  });
+  const configBanner = showCommercialConfigStatus
+    ? resolveMasterConfigBanner({ isConnected, metadata })
+    : null;
   if (configBanner) {
     items.push({
       tone: configBanner.tone,

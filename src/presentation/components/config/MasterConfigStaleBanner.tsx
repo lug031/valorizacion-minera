@@ -8,7 +8,6 @@ import { resolveMasterConfigBanner } from '../../utils/master-config-sync-banner
 
 export function MasterConfigStaleBanner() {
   const metadata = useSyncStore((s) => s.metadata);
-  const configLoading = useSyncStore((s) => s.loading);
   const [isConnected, setIsConnected] = useState(true);
 
   const refreshNet = useCallback(async () => {
@@ -29,11 +28,7 @@ export function MasterConfigStaleBanner() {
     }, [refreshNet])
   );
 
-  const banner = resolveMasterConfigBanner({
-    isConnected,
-    metadata,
-    configLoading,
-  });
+  const banner = resolveMasterConfigBanner({ isConnected, metadata });
 
   if (!banner) return null;
 

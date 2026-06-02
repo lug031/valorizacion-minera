@@ -3,6 +3,7 @@ import { useAuthStore } from '../../src/presentation/store/auth-store';
 import { useDeviceBindingStore } from '../../src/presentation/store/device-binding-store';
 import { useDeviceBindingGuard } from '../../src/presentation/hooks/use-device-binding-guard';
 import { useSensitiveScreenCaptureGuard } from '../../src/presentation/hooks/use-sensitive-screen-capture-guard';
+import { useCommercialSyncOnRoute } from '../../src/presentation/hooks/use-commercial-sync-on-route';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 export default function AppLayout() {
@@ -10,6 +11,7 @@ export default function AppLayout() {
   const { gateStatus, isHydrated: bindingHydrated } = useDeviceBindingStore();
   useDeviceBindingGuard(isHydrated && bindingHydrated);
   useSensitiveScreenCaptureGuard();
+  useCommercialSyncOnRoute(Boolean(user && gateStatus !== 'blocked'));
 
   if (!isHydrated || !bindingHydrated) {
     return (

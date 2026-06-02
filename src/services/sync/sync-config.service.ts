@@ -9,6 +9,8 @@ import { ensureSyncIdentity, getMobileDataClient } from '../../infrastructure/am
 import { assertPublishedConfigBundle, BundleValidationError } from './sync-config-bundle';
 import { syncCloudPayloadSchema, type SyncCloudPayload } from './sync-config.schemas';
 import { buildConfigSyncChangelog } from './build-config-sync-changelog';
+import { mergeConfigSyncChangelog } from './merge-config-sync-changelog';
+import { pruneConfigChangelog } from './config-reference-baseline';
 import { captureConfigSnapshot } from './config-sync-snapshot';
 import type { ConfigSyncChangelog } from './config-sync-changelog.types';
 import type { SyncConfigResult, SyncMetadata, SyncStatus } from './sync-config.types';
@@ -349,12 +351,15 @@ export async function syncMasterConfig(actor: AppActor): Promise<SyncConfigResul
     const bundle = assertPublishedConfigBundle(payload);
 
     if (isConfigBundleUnchanged(previous, payload)) {
+      const snapshotNow = await captureConfigSnapshot();
+      const prunedChangelog = pruneConfigChangelog(previous.configChangelog, snapshotNow);
       const metadata: SyncMetadata = {
         ...previous,
         status: 'success',
         errorMessage: null,
         validationIssues: [],
         bundleVersion: bundle.bundleVersion ?? previous.bundleVersion,
+        configChangelog: prunedChangelog,
       };
       await sqliteSyncMetadataRepository.saveConfigMetadata(metadata);
       return { metadata };
@@ -364,7 +369,12 @@ export async function syncMasterConfig(actor: AppActor): Promise<SyncConfigResul
     await persistPayload(payload);
     const snapshotAfter = await captureConfigSnapshot();
     const syncAt = new Date().toISOString();
-    const configChangelog = buildConfigSyncChangelog(snapshotBefore, snapshotAfter, syncAt);
+    const deltaChangelog = buildConfigSyncChangelog(snapshotBefore, snapshotAfter, syncAt);
+    const configChangelog =
+      pruneConfigChangelog(
+        mergeConfigSyncChangelog(previous.configChangelog, deltaChangelog, snapshotAfter),
+        snapshotAfter
+      ) ?? null;
 
     const metadata = buildMetadata(payload, 'success', null, {
       bundleVersion: bundle.bundleVersion,

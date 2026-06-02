@@ -6,14 +6,10 @@ import {
   buildInterFetchStatusHint,
   hasValidInterSyncMetadata,
 } from '../../utils/inter-sync-hint';
+import { formatPeruDateTime } from '../../../utils/peru-datetime';
 
 function formatTimestamp(iso: string | null | undefined): string {
-  if (!iso?.trim()) return '—';
-  try {
-    return new Date(iso).toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' });
-  } catch {
-    return iso;
-  }
+  return formatPeruDateTime(iso);
 }
 
 function sourceLabel(source: string | null | undefined): string {

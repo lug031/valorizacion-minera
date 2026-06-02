@@ -17,7 +17,6 @@ import { useSettingsStore } from '../../../src/presentation/store/settings-store
 import { useSyncStore } from '../../../src/presentation/store/sync-store';
 import { buildInterMetalHint } from '../../../src/presentation/utils/inter-sync-hint';
 import { buildCatalogValueHint } from '../../../src/presentation/utils/catalog-value-hint';
-import { SyncStatusBanners } from '../../../src/presentation/components/config/SyncStatusBanners';
 import { screenPadding } from '../../../src/presentation/theme/app-theme';
 import { isScenarioComparisonUiVisible } from '../../../src/config/scenario-comparison-access';
 
@@ -131,8 +130,6 @@ export default function NewValuationScreen() {
         keyboardShouldPersistTaps="handled"
         style={styles.scrollBg}
       >
-        <SyncStatusBanners showValuationOutbox={false} />
-
         <CotizadorHeaderBlock control={control} />
 
         {showComparison ? (

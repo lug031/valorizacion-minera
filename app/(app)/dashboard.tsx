@@ -5,7 +5,6 @@ import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { AuthUser } from '../../src/presentation/services/auth/auth-service';
 import { useAuthStore } from '../../src/presentation/store/auth-store';
-import { useSettingsStore } from '../../src/presentation/store/settings-store';
 import { useValuationDraftStore } from '../../src/presentation/store/valuation-draft-store';
 import { useSyncStore } from '../../src/presentation/store/sync-store';
 import { ScreenHeader } from '../../src/presentation/components/ui/ScreenHeader';
@@ -15,6 +14,8 @@ import { SyncStatusBanners } from '../../src/presentation/components/config/Sync
 import { canUseScenarioComparison } from '../../src/config/scenario-comparison-access';
 import { getLastSeenChangelogSyncAt } from '../../src/infrastructure/config/changelog-seen-store';
 import { unreadCommercialUpdatesCount } from '../../src/presentation/utils/commercial-updates-unread';
+import { loadCommercialDefaultsForValuation } from '../../src/services/sync/load-commercial-defaults';
+import { scheduleForegroundSync } from '../../src/services/sync/foreground-sync.service';
 
 function sessionSubtitle(user: AuthUser | null | undefined, isAdmin: boolean): string {
   if (!user) return isAdmin ? 'Perfil administrador' : 'Operador de campo';
@@ -32,7 +33,6 @@ function sessionSubtitle(user: AuthUser | null | undefined, isAdmin: boolean): s
 export default function DashboardScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const settings = useSettingsStore();
   const syncMetadata = useSyncStore((s) => s.metadata);
   const hydrateSync = useSyncStore((s) => s.hydrate);
   const initDraft = useValuationDraftStore((s) => s.initDraft);
@@ -44,6 +44,7 @@ export default function DashboardScreen() {
     isAdmin &&
     user?.authSource === 'local_seed';
   const [unreadUpdates, setUnreadUpdates] = useState(0);
+  const [startingValuation, setStartingValuation] = useState(false);
 
   const refreshUnread = useCallback(async () => {
     await hydrateSync();
@@ -54,6 +55,7 @@ export default function DashboardScreen() {
   useFocusEffect(
     useCallback(() => {
       void refreshUnread();
+      scheduleForegroundSync();
     }, [refreshUnread])
   );
 
@@ -61,22 +63,15 @@ export default function DashboardScreen() {
     void refreshUnread();
   }, [syncMetadata?.configChangelog?.syncAt, refreshUnread]);
 
-  const startNew = () => {
-    initDraft(
-      {
-        factor: settings.factor,
-        recPercentGold: settings.recPercentGold,
-        recPercentSilver: settings.recPercentSilver,
-        rcGold: settings.rcGold,
-        rcSilver: settings.rcSilver,
-        consumos: settings.consumos,
-        flete: settings.flete,
-        interGold: settings.interGold,
-        interSilver: settings.interSilver,
-      },
-      { comparisonEnabled: false }
-    );
-    router.push('/(app)/valorizacion/nueva');
+  const startNew = async (comparisonEnabled: boolean) => {
+    setStartingValuation(true);
+    try {
+      const defaults = await loadCommercialDefaultsForValuation({ force: true });
+      initDraft(defaults, { comparisonEnabled });
+      router.push('/(app)/valorizacion/nueva');
+    } finally {
+      setStartingValuation(false);
+    }
   };
 
   const updatesLabel =
@@ -100,29 +95,22 @@ export default function DashboardScreen() {
             </Text>
           </View>
         ) : null}
-        <Button mode="contained" onPress={startNew} style={styles.btn} contentStyle={styles.btnContent}>
+        <Button
+          mode="contained"
+          loading={startingValuation}
+          disabled={startingValuation}
+          onPress={() => void startNew(false)}
+          style={styles.btn}
+          contentStyle={styles.btnContent}
+        >
           Nueva valorización
         </Button>
         {comparisonProductEnabled ? (
           <Button
             mode="outlined"
-            onPress={() => {
-              initDraft(
-                {
-                  factor: settings.factor,
-                  recPercentGold: settings.recPercentGold,
-                  recPercentSilver: settings.recPercentSilver,
-                  rcGold: settings.rcGold,
-                  rcSilver: settings.rcSilver,
-                  consumos: settings.consumos,
-                  flete: settings.flete,
-                  interGold: settings.interGold,
-                  interSilver: settings.interSilver,
-                },
-                { comparisonEnabled: true }
-              );
-              router.push('/(app)/valorizacion/nueva');
-            }}
+            loading={startingValuation}
+            disabled={startingValuation}
+            onPress={() => void startNew(true)}
             style={styles.btn}
             contentStyle={styles.btnContent}
           >

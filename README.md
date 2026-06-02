@@ -35,7 +35,9 @@ Login mock (solo `__DEV__`): `operador` / `operador123` o `admin` / `admin123`. 
 
 ### Sync y configuración comercial (producción)
 
-- Cada teléfono **activado** descarga automáticamente la config maestra de la web (INTER, factor, MAT, maquila) al tener internet.
+- Cada teléfono **activado** descarga automáticamente la config maestra de la web (INTER, factor, MAT, maquila) al tener internet: al abrir la app, reconectar red, cambiar de pantalla o pulsar **Nueva valorización** (descarga forzada antes de abrir el cotizador).
+- **Actualizaciones comerciales**: catálogo de solo lectura; botón opcional «Comprobar actualizaciones» si acaba de cambiar algo en la web.
+- **Importante (APK release):** en `.env` antes de compilar deben estar `EXPO_PUBLIC_SYNC_USERNAME` y `EXPO_PUBLIC_SYNC_PASSWORD` con un usuario Cognito del grupo **admin** o **supervisor** (cuenta de servicio de solo lectura). Sin esto, el operador no puede bajar INTER ni otros maestros aunque tenga internet.
 - Orden en segundo plano: **config maestra → envío de cotizaciones pendientes**.
 - Si el bundle de la web no cambió, no se reescribe SQLite ni el changelog.
 - Tras **activar dispositivo**, se fuerza una sync de config inmediata.

@@ -172,7 +172,7 @@ export default function HistorialDetailScreen() {
         <Card style={styles.card}>
           <Card.Content>
             <Text variant="titleMedium">{valuation.code}</Text>
-            <Text>Fecha de creación: {formatDisplayDate(valuation.createdAt.slice(0, 10))}</Text>
+            <Text>Fecha de creación: {formatDisplayDateTime(valuation.createdAt)}</Text>
             <Text>Última modificación: {formatDisplayDate(valuation.fecha)}</Text>
             <ValuationPanelSyncBadge
               status={valuation.syncStatus}

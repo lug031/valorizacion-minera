@@ -25,6 +25,22 @@ export function formatCatalogValue(
   return format ? format(raw) : raw;
 }
 
+/** Normaliza números comerciales (ley, maquila, US$, factor). */
+export function normCommercialNumeric(value: string | null | undefined): string {
+  const cleaned = String(value ?? '')
+    .trim()
+    .replace(/^US\$\s*/i, '')
+    .replace(',', '.');
+  if (!cleaned) return '';
+  const n = Number.parseFloat(cleaned);
+  if (Number.isFinite(n)) return String(n);
+  return cleaned;
+}
+
+function normMaquilaLey(value: string): string {
+  return normCommercialNumeric(value);
+}
+
 export function maquilaRangeKey(min: string, max: string): string {
-  return `${String(min).trim().replace(',', '.')}|${String(max).trim().replace(',', '.')}`;
+  return `${normMaquilaLey(min)}|${normMaquilaLey(max)}`;
 }

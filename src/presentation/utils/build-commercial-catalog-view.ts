@@ -23,6 +23,8 @@ export interface CommercialCatalogRow {
 export interface CommercialCatalogSection {
   category: ConfigChangeCategory;
   title: string;
+  /** Catálogo completo (valores iniciales) o solo entradas con cambios (MAT / maquila). */
+  displayMode: 'full_catalog' | 'changes_only';
   rows: CommercialCatalogRow[];
   changedCount: number;
 }
@@ -35,14 +37,14 @@ function changelogById(changelog: ConfigSyncChangelog | null | undefined): Map<s
   return map;
 }
 
-function rowFromChange(entry: ConfigChangeEntry, currentValue: string): CommercialCatalogRow {
+function rowFromChange(entry: ConfigChangeEntry, currentValue: string, label: string): CommercialCatalogRow {
   let status: CommercialCatalogRowStatus = 'changed';
   if (entry.previousValue == null && entry.newValue != null) status = 'added';
   if (entry.previousValue != null && entry.newValue == null) status = 'removed';
 
   return {
     id: entry.id,
-    label: entry.label,
+    label,
     status,
     currentValue,
     previousValue: entry.previousValue,
@@ -65,6 +67,29 @@ function unchangedRow(id: string, label: string, currentValue: string): Commerci
   };
 }
 
+function materialCodeFromChangeId(id: string): string | null {
+  for (const prefix of ['mat.add.', 'mat.status.', 'mat.remove.']) {
+    if (id.startsWith(prefix)) return id.slice(prefix.length);
+  }
+  return null;
+}
+
+function materialLabel(code: string): string {
+  return `Tipo MAT «${code}»`;
+}
+
+function maquilaKeyFromChangeId(id: string): string | null {
+  if (id.startsWith('maquila.add.')) return id.slice('maquila.add.'.length);
+  if (id.startsWith('maquila.remove.')) return id.slice('maquila.remove.'.length);
+  if (id.startsWith('maquila.')) return id.slice('maquila.'.length);
+  return null;
+}
+
+function maquilaLabelFromKey(key: string): string {
+  const [min, max] = key.split('|');
+  return `Maquila ${min}–${max} oz/tc`;
+}
+
 function buildSettingsSection(
   snapshot: ConfigSyncSnapshot,
   byId: Map<string, ConfigChangeEntry>
@@ -78,14 +103,15 @@ function buildSettingsSection(
     const change = byId.get(id);
     rows.push(
       change
-        ? rowFromChange(change, current)
+        ? rowFromChange(change, current, field.label)
         : unchangedRow(id, field.label, current)
     );
   }
 
   return {
     category: 'valores_iniciales',
-    title: 'Valores iniciales (web)',
+    title: 'Valores iniciales',
+    displayMode: 'full_catalog',
     rows,
     changedCount: rows.filter((r) => r.status !== 'unchanged').length,
   };
@@ -96,37 +122,28 @@ function buildMaterialSection(
   byId: Map<string, ConfigChangeEntry>
 ): CommercialCatalogSection {
   const rows: CommercialCatalogRow[] = [];
-  const seen = new Set<string>();
 
-  const sorted = [...snapshot.materialTypes].sort(
-    (a, b) => a.code.localeCompare(b.code) || Number(b.isActive) - Number(a.isActive)
-  );
+  for (const entry of byId.values()) {
+    if (entry.category !== 'tipo_mat') continue;
+    const code = materialCodeFromChangeId(entry.id);
+    if (!code) continue;
 
-  for (const mat of sorted) {
-    const code = mat.code.toUpperCase();
-    seen.add(code);
-    const current = `${code} · ${mat.isActive ? 'Activo' : 'Inactivo'}`;
-    const change =
-      byId.get(`mat.add.${code}`) ??
-      byId.get(`mat.status.${code}`) ??
-      byId.get(`mat.remove.${code}`);
-    rows.push(
-      change ? rowFromChange(change, current) : unchangedRow(`mat.${code}`, `Tipo MAT «${code}»`, current)
-    );
+    const mat = snapshot.materialTypes.find((m) => m.code.toUpperCase() === code);
+    const current = mat
+      ? `${code} · ${mat.isActive ? 'Activo' : 'Inactivo'}`
+      : entry.newValue ?? entry.previousValue ?? '—';
+
+    rows.push(rowFromChange(entry, current, materialLabel(code)));
   }
 
-  for (const [id, entry] of byId) {
-    if (!id.startsWith('mat.remove.')) continue;
-    const code = id.slice('mat.remove.'.length);
-    if (seen.has(code)) continue;
-    rows.push(rowFromChange(entry, '—'));
-  }
+  rows.sort((a, b) => a.label.localeCompare(b.label));
 
   return {
     category: 'tipo_mat',
-    title: 'Tipos de material (web)',
+    title: 'Tipos de material',
+    displayMode: 'changes_only',
     rows,
-    changedCount: rows.filter((r) => r.status !== 'unchanged').length,
+    changedCount: rows.length,
   };
 }
 
@@ -135,38 +152,30 @@ function buildMaquilaSection(
   byId: Map<string, ConfigChangeEntry>
 ): CommercialCatalogSection {
   const rows: CommercialCatalogRow[] = [];
-  const seen = new Set<string>();
 
-  const sorted = [...snapshot.maquilaRanges].sort((a, b) =>
-    a.minLeyOzTc.localeCompare(b.minLeyOzTc, undefined, { numeric: true })
-  );
+  for (const entry of byId.values()) {
+    if (entry.category !== 'maquila') continue;
+    const key = maquilaKeyFromChangeId(entry.id);
+    if (!key) continue;
 
-  for (const range of sorted) {
-    const key = maquilaRangeKey(range.minLeyOzTc, range.maxLeyOzTc);
-    seen.add(key);
-    const label = `Maquila ${range.minLeyOzTc}–${range.maxLeyOzTc} oz/tc`;
-    const current = `${range.maquila}${range.isActive ? '' : ' (inactivo)'}`;
-    const change =
-      byId.get(`maquila.add.${key}`) ??
-      byId.get(`maquila.${key}`) ??
-      byId.get(`maquila.remove.${key}`);
-    rows.push(
-      change ? rowFromChange(change, current) : unchangedRow(`maquila.${key}`, label, current)
+    const range = snapshot.maquilaRanges.find(
+      (r) => maquilaRangeKey(r.minLeyOzTc, r.maxLeyOzTc) === key
     );
+    const current = range
+      ? `${range.maquila}${range.isActive ? '' : ' (inactivo)'}`
+      : entry.newValue ?? entry.previousValue ?? '—';
+
+    rows.push(rowFromChange(entry, current, maquilaLabelFromKey(key)));
   }
 
-  for (const [id, entry] of byId) {
-    if (!id.startsWith('maquila.remove.')) continue;
-    const key = id.slice('maquila.remove.'.length);
-    if (seen.has(key)) continue;
-    rows.push(rowFromChange(entry, '—'));
-  }
+  rows.sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
 
   return {
     category: 'maquila',
-    title: 'Rangos de maquila (web)',
+    title: 'Rangos de maquila',
+    displayMode: 'changes_only',
     rows,
-    changedCount: rows.filter((r) => r.status !== 'unchanged').length,
+    changedCount: rows.length,
   };
 }
 
