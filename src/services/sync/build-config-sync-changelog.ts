@@ -3,34 +3,23 @@ import type {
   ConfigSyncChangelog,
 } from './config-sync-changelog.types';
 import type { ConfigSyncSnapshot } from './config-sync-snapshot';
-
-const SETTINGS_FIELDS: Array<{
-  key: keyof NonNullable<ConfigSyncSnapshot['appSettings']>;
-  label: string;
-  format?: (v: string) => string;
-}> = [
-  { key: 'factor', label: 'Factor comercial' },
-  { key: 'defaultRecPercentGold', label: 'REC oro (%)' },
-  { key: 'defaultRecPercentSilver', label: 'REC plata (%)' },
-  { key: 'defaultRcGold', label: 'RC oro', format: (v) => `US$ ${v}` },
-  { key: 'defaultRcSilver', label: 'RC plata', format: (v) => `US$ ${v}` },
-  { key: 'defaultConsumos', label: 'Consumos', format: (v) => `US$ ${v}` },
-  { key: 'defaultFlete', label: 'Flete', format: (v) => `US$ ${v}` },
-  { key: 'defaultInterGold', label: 'INTER oro', format: (v) => `US$ ${v}` },
-  { key: 'defaultInterSilver', label: 'INTER plata', format: (v) => `US$ ${v}` },
-];
+import {
+  COMMERCIAL_SETTINGS_FIELDS as SETTINGS_FIELDS,
+  maquilaRangeKey as rangeKey,
+} from './commercial-catalog-fields';
 
 function norm(value: string | null | undefined): string {
   return String(value ?? '').trim().replace(',', '.');
 }
 
-function display(
+function displayOrNull(
   value: string | null | undefined,
   format?: (v: string) => string
 ): string | null {
   const raw = String(value ?? '').trim();
   if (!raw) return null;
-  return format ? format(raw) : raw;
+  const formatted = format ? format(raw) : raw;
+  return formatted === '—' ? null : formatted;
 }
 
 function pushEntry(
@@ -61,8 +50,8 @@ export function buildConfigSyncChangelog(
         id: `settings.${field.key}`,
         category: 'valores_iniciales',
         label: field.label,
-        previousValue: display(prevRaw, field.format),
-        newValue: display(nextRaw, field.format),
+        previousValue: displayOrNull(prevRaw, field.format),
+        newValue: displayOrNull(nextRaw, field.format),
         previousRecordedAt: prevAt,
         newRecordedAt: nextAt,
       },
@@ -130,7 +119,6 @@ export function buildConfigSyncChangelog(
     }
   }
 
-  const rangeKey = (min: string, max: string) => `${norm(min)}|${norm(max)}`;
   const beforeMaquila = new Map(
     before.maquilaRanges.map((r) => [rangeKey(r.minLeyOzTc, r.maxLeyOzTc), r] as const)
   );
