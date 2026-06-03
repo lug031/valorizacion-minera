@@ -28,6 +28,10 @@ export interface DeviceRegistration {
   appVersion: string | null;
   enrollmentStatus: 'local' | 'pending' | 'enrolled' | 'revoked';
   graceDaysOffline: number | null;
+  usagePolicy: 'standard' | 'trial';
+  trialLimitMinutes: number | null;
+  usageQuotaResetAt: string | null;
+  usageAccumulatedMs: number;
   notes: string | null;
   metadataJson: string | null;
 }

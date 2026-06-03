@@ -5,15 +5,23 @@ import { useDeviceBindingGuard } from '../../src/presentation/hooks/use-device-b
 import { useDeviceBindingForeground } from '../../src/presentation/hooks/use-device-binding-foreground';
 import { useSensitiveScreenCaptureGuard } from '../../src/presentation/hooks/use-sensitive-screen-capture-guard';
 import { useCommercialSyncOnRoute } from '../../src/presentation/hooks/use-commercial-sync-on-route';
+import { useUsageQuotaGuard } from '../../src/presentation/hooks/use-usage-quota-guard';
+import { useUsageQuotaTracker } from '../../src/presentation/hooks/use-usage-quota-tracker';
+import { useUsageQuotaStore } from '../../src/presentation/store/usage-quota-store';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 export default function AppLayout() {
   const { user, isHydrated } = useAuthStore();
   const { gateStatus, isHydrated: bindingHydrated } = useDeviceBindingStore();
-  useDeviceBindingGuard(isHydrated && bindingHydrated);
-  useDeviceBindingForeground(Boolean(user && isHydrated && bindingHydrated));
+  const usageHydrated = useUsageQuotaStore((s) => s.isHydrated);
+  const usageGate = useUsageQuotaStore((s) => s.gateStatus);
+  const appReady = Boolean(user && isHydrated && bindingHydrated);
+  useDeviceBindingGuard(appReady);
+  useDeviceBindingForeground(appReady);
+  useUsageQuotaTracker(appReady);
+  useUsageQuotaGuard(appReady);
   useSensitiveScreenCaptureGuard();
-  useCommercialSyncOnRoute(Boolean(user && gateStatus !== 'blocked'));
+  useCommercialSyncOnRoute(Boolean(appReady && gateStatus !== 'blocked' && usageGate !== 'exceeded'));
 
   if (!isHydrated || !bindingHydrated) {
     return (
@@ -25,6 +33,10 @@ export default function AppLayout() {
 
   if (gateStatus === 'blocked') {
     return <Redirect href="/(auth)/device-blocked" />;
+  }
+
+  if (usageHydrated && usageGate === 'exceeded') {
+    return <Redirect href="/(auth)/usage-blocked" />;
   }
 
   if (!user) {

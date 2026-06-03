@@ -13,6 +13,9 @@ export interface SaveEnrolledDeviceInput {
   appVersion: string | null;
   metadataJson?: string | null;
   graceDaysOffline?: number | null;
+  usagePolicy?: 'standard' | 'trial';
+  trialLimitMinutes?: number | null;
+  usageQuotaResetAt?: string | null;
 }
 
 export interface DeviceRepository {
@@ -28,6 +31,16 @@ export interface DeviceRepository {
     appVersion?: string | null;
     platform?: string | null;
     graceDaysOffline?: number | null;
+    usagePolicy?: 'standard' | 'trial';
+    trialLimitMinutes?: number | null;
+    usageQuotaResetAt?: string | null;
+  }): Promise<void>;
+  addUsageAccumulatedMs(cloudDeviceId: string, deltaMs: number): Promise<void>;
+  resetUsageAccumulated(cloudDeviceId: string): Promise<void>;
+  applyUsageQuotaReset(input: {
+    cloudDeviceId: string;
+    usageQuotaResetAt: string;
+    trialLimitMinutes?: number | null;
   }): Promise<void>;
 }
 
@@ -46,9 +59,14 @@ interface DeviceRow {
   notes: string | null;
   metadata_json: string | null;
   grace_days_offline: number | null;
+  usage_policy: string | null;
+  trial_limit_minutes: number | null;
+  usage_quota_reset_at: string | null;
+  usage_accumulated_ms: number | null;
 }
 
 function mapRow(row: DeviceRow): DeviceRegistration {
+  const policy = row.usage_policy === 'trial' ? 'trial' : 'standard';
   return {
     id: row.id,
     userId: row.user_id,
@@ -62,6 +80,10 @@ function mapRow(row: DeviceRow): DeviceRegistration {
     appVersion: row.app_version,
     enrollmentStatus: row.enrollment_status as DeviceRegistration['enrollmentStatus'],
     graceDaysOffline: row.grace_days_offline,
+    usagePolicy: policy,
+    trialLimitMinutes: row.trial_limit_minutes,
+    usageQuotaResetAt: row.usage_quota_reset_at,
+    usageAccumulatedMs: row.usage_accumulated_ms ?? 0,
     notes: row.notes,
     metadataJson: row.metadata_json,
   };
@@ -104,12 +126,14 @@ export function createSqliteDeviceRepository(
 
     async saveEnrolledDevice(input) {
       const db = await getDb();
+      const usagePolicy = input.usagePolicy ?? 'standard';
       await db.run(
         `INSERT INTO devices (
            id, user_id, device_fingerprint, cloud_device_id, valid_until, is_blocked,
            registered_at, last_sync_at, platform, app_version, enrollment_status,
-           grace_days_offline, notes, metadata_json
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'enrolled', ?, NULL, ?)
+           grace_days_offline, usage_policy, trial_limit_minutes, usage_quota_reset_at,
+           usage_accumulated_ms, notes, metadata_json
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'enrolled', ?, ?, ?, ?, 0, NULL, ?)
          ON CONFLICT(user_id, device_fingerprint) DO UPDATE SET
            cloud_device_id = excluded.cloud_device_id,
            valid_until = excluded.valid_until,
@@ -120,6 +144,10 @@ export function createSqliteDeviceRepository(
            app_version = excluded.app_version,
            enrollment_status = 'enrolled',
            grace_days_offline = excluded.grace_days_offline,
+           usage_policy = excluded.usage_policy,
+           trial_limit_minutes = excluded.trial_limit_minutes,
+           usage_quota_reset_at = excluded.usage_quota_reset_at,
+           usage_accumulated_ms = 0,
            metadata_json = excluded.metadata_json`,
         [
           input.id,
@@ -133,6 +161,9 @@ export function createSqliteDeviceRepository(
           input.platform,
           input.appVersion,
           input.graceDaysOffline ?? null,
+          usagePolicy,
+          input.trialLimitMinutes ?? null,
+          input.usageQuotaResetAt ?? null,
           input.metadataJson ?? null,
         ]
       );
@@ -148,7 +179,10 @@ export function createSqliteDeviceRepository(
            last_sync_at = ?,
            platform = COALESCE(?, platform),
            app_version = COALESCE(?, app_version),
-           grace_days_offline = COALESCE(?, grace_days_offline)
+           grace_days_offline = COALESCE(?, grace_days_offline),
+           usage_policy = COALESCE(?, usage_policy),
+           trial_limit_minutes = COALESCE(?, trial_limit_minutes),
+           usage_quota_reset_at = COALESCE(?, usage_quota_reset_at)
          WHERE cloud_device_id = ?`,
         [
           input.enrollmentStatus,
@@ -158,8 +192,41 @@ export function createSqliteDeviceRepository(
           input.platform ?? null,
           input.appVersion ?? null,
           input.graceDaysOffline ?? null,
+          input.usagePolicy ?? null,
+          input.trialLimitMinutes ?? null,
+          input.usageQuotaResetAt ?? null,
           input.cloudDeviceId,
         ]
+      );
+    },
+
+    async addUsageAccumulatedMs(cloudDeviceId, deltaMs) {
+      if (deltaMs <= 0) return;
+      const db = await getDb();
+      await db.run(
+        `UPDATE devices SET usage_accumulated_ms = COALESCE(usage_accumulated_ms, 0) + ?
+         WHERE cloud_device_id = ?`,
+        [deltaMs, cloudDeviceId]
+      );
+    },
+
+    async resetUsageAccumulated(cloudDeviceId) {
+      const db = await getDb();
+      await db.run(
+        `UPDATE devices SET usage_accumulated_ms = 0 WHERE cloud_device_id = ?`,
+        [cloudDeviceId]
+      );
+    },
+
+    async applyUsageQuotaReset(input) {
+      const db = await getDb();
+      await db.run(
+        `UPDATE devices SET
+           usage_accumulated_ms = 0,
+           usage_quota_reset_at = ?,
+           trial_limit_minutes = COALESCE(?, trial_limit_minutes)
+         WHERE cloud_device_id = ?`,
+        [input.usageQuotaResetAt, input.trialLimitMinutes ?? null, input.cloudDeviceId]
       );
     },
   };

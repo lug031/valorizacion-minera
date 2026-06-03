@@ -229,4 +229,18 @@ export async function runMigrations(db: SqlExecutor): Promise<void> {
       );
     });
   }
+
+  if (currentVersion < 12) {
+    await db.withTransaction(async () => {
+      await addColumnIfMissing(db, 'devices', 'usage_policy', "TEXT NOT NULL DEFAULT 'standard'");
+      await addColumnIfMissing(db, 'devices', 'trial_limit_minutes', 'INTEGER');
+      await addColumnIfMissing(db, 'devices', 'usage_quota_reset_at', 'TEXT');
+      await addColumnIfMissing(db, 'devices', 'usage_accumulated_ms', 'INTEGER NOT NULL DEFAULT 0');
+
+      await db.run(
+        `INSERT OR REPLACE INTO schema_migrations (version, applied_at) VALUES (?, datetime('now'))`,
+        [12]
+      );
+    });
+  }
 }

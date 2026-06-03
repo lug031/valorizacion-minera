@@ -41,7 +41,7 @@ export function evaluateBindingPolicy(
 
   if (device.validUntil) {
     const validUntilMs = new Date(device.validUntil).getTime();
-    if (now.getTime() > validUntilMs && now.getTime() > graceLimit) {
+    if (now.getTime() > validUntilMs) {
       return {
         ok: false,
         reason: 'expired',

@@ -7,4 +7,4 @@ export const MAX_ACTIVE_DEVICES_BY_ROLE = {
   admin: 2,
 } as const;
 
-export const DEFAULT_GRACE_DAYS_OFFLINE = 7;
+export const DEFAULT_GRACE_DAYS_OFFLINE = 1;

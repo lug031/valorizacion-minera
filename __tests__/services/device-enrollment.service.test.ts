@@ -87,7 +87,7 @@ describe('enrollFieldDeviceOnCloud', () => {
           platform: 'android',
           appVersion: '1.0.0',
           deviceLabel: 'Tel A',
-          graceDaysOffline: 7,
+          graceDaysOffline: 1,
         },
         fieldUser: {
           id: 'cloud-user-1',
@@ -124,7 +124,7 @@ describe('enrollFieldDeviceOnCloud', () => {
           platform: 'android',
           appVersion: '1.0.0',
           deviceLabel: 'Tel B',
-          graceDaysOffline: 7,
+          graceDaysOffline: 1,
         },
         fieldUser: {
           id: 'cloud-user-2',
@@ -163,7 +163,7 @@ describe('enrollFieldDeviceOnCloud', () => {
           platform: 'android',
           appVersion: '1.0.0',
           deviceLabel: 'Tel C',
-          graceDaysOffline: 7,
+          graceDaysOffline: 1,
         },
         fieldUser: {
           id: 'cloud-user-3',
@@ -204,7 +204,7 @@ describe('enrollFieldDeviceOnCloud', () => {
           platform: 'android',
           appVersion: '1.0.0',
           deviceLabel: 'Tel D',
-          graceDaysOffline: 7,
+          graceDaysOffline: 1,
         },
         fieldUser: {
           id: 'cloud-user-4',

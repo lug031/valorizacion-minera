@@ -15,6 +15,10 @@ function makeDevice(overrides: Partial<DeviceRegistration> = {}): DeviceRegistra
     appVersion: '0.1.0',
     enrollmentStatus: 'enrolled',
     graceDaysOffline: null,
+    usagePolicy: 'standard',
+    trialLimitMinutes: null,
+    usageQuotaResetAt: null,
+    usageAccumulatedMs: 0,
     notes: null,
     metadataJson: null,
     ...overrides,
@@ -44,8 +48,28 @@ describe('evaluateBindingPolicy', () => {
     if (!result.ok) expect(result.reason).toBe('blocked');
   });
 
-  it('permite dentro del grace offline', () => {
+  it('permite dentro del grace offline (1 día)', () => {
     const result = evaluateBindingPolicy(makeDevice(), '2026-05-27T10:00:00.000Z', now);
     expect(result.ok).toBe(true);
+  });
+
+  it('bloquea por validUntil vencido sin esperar gracia', () => {
+    const result = evaluateBindingPolicy(
+      makeDevice({ validUntil: '2026-05-27T12:00:00.000Z' }),
+      '2026-05-27T10:00:00.000Z',
+      now
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe('expired');
+  });
+
+  it('bloquea stale_sync tras 1 día sin confirmación', () => {
+    const result = evaluateBindingPolicy(
+      makeDevice(),
+      '2026-05-26T09:00:00.000Z',
+      now
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe('stale_sync');
   });
 });

@@ -19,6 +19,9 @@ type SyncStatusRow = {
     isBlocked?: boolean | null;
     validUntil?: string | null;
     graceDaysOffline?: number | null;
+    usagePolicy?: 'standard' | 'trial' | null;
+    trialLimitMinutes?: number | null;
+    usageQuotaResetAt?: string | null;
     revokedAt?: string | null;
     fieldUserIsActive?: boolean | null;
     lastSeenAt?: string | null;
@@ -46,6 +49,9 @@ const SYNC_FIELD_DEVICE_STATUS = /* GraphQL */ `
       isBlocked
       validUntil
       graceDaysOffline
+      usagePolicy
+      trialLimitMinutes
+      usageQuotaResetAt
       revokedAt
       fieldUserIsActive
       lastSeenAt
@@ -94,6 +100,9 @@ export async function syncFieldDeviceStatusIfEnrolled(): Promise<boolean> {
       platform: Platform.OS,
       appVersion: resolveAppVersion(),
       graceDaysOffline: payload.graceDaysOffline ?? null,
+      usagePolicy: payload.usagePolicy === 'trial' ? 'trial' : 'standard',
+      trialLimitMinutes: payload.trialLimitMinutes ?? null,
+      usageQuotaResetAt: payload.usageQuotaResetAt ?? null,
     });
 
     if (payload.fieldUserIsActive === false) {

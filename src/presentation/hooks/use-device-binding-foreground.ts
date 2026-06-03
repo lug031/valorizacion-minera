@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
-import NetInfo from '@react-native-community/netinfo';
 import { router } from 'expo-router';
 import { getEnrollmentMode } from '../../infrastructure/device/enrollment-store';
 import { refreshDeviceBindingGate } from '../../services/device/refresh-device-binding';
@@ -17,7 +16,7 @@ function navigateIfBlocked(): void {
 
 /**
  * Revalida licencia al volver a foreground y en intervalos mientras la app está activa.
- * Mantiene offline-first: solo ejecuta contra backend cuando hay conectividad.
+ * La política local (gracia / validUntil) se evalúa con o sin internet; la sync con nube solo si hay red.
  */
 export function useDeviceBindingForeground(enabled: boolean): void {
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
@@ -32,9 +31,6 @@ export function useDeviceBindingForeground(enabled: boolean): void {
       try {
         const mode = await getEnrollmentMode();
         if (mode !== 'enrolled') return;
-
-        const net = await NetInfo.fetch();
-        if (!net.isConnected) return;
 
         await refreshDeviceBindingGate();
         navigateIfBlocked();

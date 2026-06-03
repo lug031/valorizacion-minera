@@ -12,6 +12,9 @@ export type EnrollmentErrorCode =
   | 'FINGERPRINT_ALREADY_BOUND'
   | 'RATE_LIMITED'
   | 'INVALID_FINGERPRINT'
+  | 'INVALID_USAGE_EXTENSION_CODE'
+  | 'USAGE_EXTENSION_CODE_EXPIRED'
+  | 'USAGE_EXTENSION_CODE_USED'
   | 'NETWORK_ERROR'
   | 'UNKNOWN';
 
@@ -69,6 +72,9 @@ export function enrollmentErrorMessage(code: EnrollmentErrorCode): string {
     case 'INVALID_ENROLLMENT_CODE':
     case 'ENROLLMENT_CODE_EXPIRED':
     case 'ENROLLMENT_CODE_USED':
+    case 'INVALID_USAGE_EXTENSION_CODE':
+    case 'USAGE_EXTENSION_CODE_EXPIRED':
+    case 'USAGE_EXTENSION_CODE_USED':
       return 'Código inválido o expirado. Pida uno nuevo al administrador.';
     case 'INVALID_CREDENTIALS':
       return 'Usuario o contraseña incorrectos.';

@@ -47,6 +47,9 @@ type EnrollMutationRow = {
       appVersion?: string | null;
       deviceLabel?: string | null;
       graceDaysOffline?: number | null;
+      usagePolicy?: 'standard' | 'trial' | null;
+      trialLimitMinutes?: number | null;
+      usageQuotaResetAt?: string | null;
     } | null;
     fieldUser?: {
       id?: string;
@@ -90,6 +93,9 @@ const ENROLL_FIELD_DEVICE = /* GraphQL */ `
         appVersion
         deviceLabel
         graceDaysOffline
+        usagePolicy
+        trialLimitMinutes
+        usageQuotaResetAt
       }
       fieldUser {
         id
@@ -175,6 +181,9 @@ export async function enrollFieldDeviceOnCloud(
       platform: device.platform ?? Platform.OS,
       appVersion: device.appVersion ?? resolveAppVersion(),
       graceDaysOffline: device.graceDaysOffline ?? null,
+      usagePolicy: device.usagePolicy === 'trial' ? 'trial' : 'standard',
+      trialLimitMinutes: device.trialLimitMinutes ?? null,
+      usageQuotaResetAt: device.usageQuotaResetAt ?? serverTime,
       metadataJson: JSON.stringify({
         fingerprintVersion: FINGERPRINT_VERSION,
         deviceLabel: device.deviceLabel ?? input.deviceLabel ?? null,

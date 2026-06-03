@@ -11,6 +11,8 @@ import { ScreenHeader } from '../../src/presentation/components/ui/ScreenHeader'
 import { screenPadding } from '../../src/presentation/theme/app-theme';
 import { canManageSettings } from '../../src/presentation/utils/role-access';
 import { SyncStatusBanners } from '../../src/presentation/components/config/SyncStatusBanners';
+import { DeviceAuthorizationBanner } from '../../src/presentation/components/device/DeviceAuthorizationBanner';
+import { UsageQuotaBanner } from '../../src/presentation/components/device/UsageQuotaBanner';
 import { canUseScenarioComparison } from '../../src/config/scenario-comparison-access';
 import { getLastSeenChangelogSyncAt } from '../../src/infrastructure/config/changelog-seen-store';
 import { unreadCommercialUpdatesCount } from '../../src/presentation/utils/commercial-updates-unread';
@@ -83,6 +85,8 @@ export default function DashboardScreen() {
           title={`Hola, ${user?.displayName ?? 'Usuario'}`}
           subtitle={sessionSubtitle(user)}
         />
+        <DeviceAuthorizationBanner />
+        <UsageQuotaBanner />
         <SyncStatusBanners showValuationOutbox />
         {showSeedBootstrapBanner ? (
           <View style={styles.banner}>
