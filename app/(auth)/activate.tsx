@@ -63,7 +63,7 @@ export default function ActivateDeviceScreen() {
       if (e instanceof EnrollmentError) {
         setError(enrollmentErrorMessage(e.code));
       } else {
-        setError(e instanceof Error ? e.message : 'No se pudo activar el dispositivo.');
+        setError('No se pudo activar el teléfono. Verifique los datos o contacte al administrador.');
       }
     } finally {
       setActivating(false);
