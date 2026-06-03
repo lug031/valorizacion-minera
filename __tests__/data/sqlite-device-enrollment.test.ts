@@ -144,4 +144,50 @@ describe('sqlite enrollment persistence', () => {
     expect(bound?.enrollmentStatus).toBe('revoked');
     expect(bound?.cloudDeviceId).toBe('cloud-device-rev');
   });
+
+  it('conserva usage_accumulated_ms cuando usage_quota_reset_applied_at coincide con reset', async () => {
+    const devices = createSqliteDeviceRepository(getDb);
+    const resetAt = '2026-06-03T12:00:00.000Z';
+    const usedMs = 90 * 60 * 1000;
+
+    await devices.saveEnrolledDevice({
+      id: 'local-dev-trial',
+      userId: 'seed-lugo',
+      deviceFingerprint: 'vm-sha256:fingerprint-trial',
+      cloudDeviceId: 'cloud-device-trial',
+      validUntil: null,
+      isBlocked: false,
+      registeredAt: resetAt,
+      platform: 'android',
+      appVersion: '0.1.0',
+      usagePolicy: 'trial',
+      trialLimitMinutes: 120,
+      usageQuotaResetAt: resetAt,
+      usageQuotaResetAppliedAt: resetAt,
+    });
+
+    await db.run(
+      `UPDATE devices SET usage_accumulated_ms = ? WHERE cloud_device_id = ?`,
+      [usedMs, 'cloud-device-trial']
+    );
+
+    const bound = await devices.getBindingDevice('cloud-device-trial');
+    expect(bound?.usageQuotaResetAppliedAt).toBe(resetAt);
+    expect(bound?.usageAccumulatedMs).toBe(usedMs);
+
+    await devices.resetUsageAccumulated('cloud-device-trial');
+    await devices.markUsageQuotaResetApplied('cloud-device-trial', resetAt);
+
+    const afterWrongReset = await devices.getBindingDevice('cloud-device-trial');
+    expect(afterWrongReset?.usageAccumulatedMs).toBe(0);
+
+    await db.run(
+      `UPDATE devices SET usage_accumulated_ms = ?, usage_quota_reset_applied_at = ? WHERE cloud_device_id = ?`,
+      [usedMs, resetAt, 'cloud-device-trial']
+    );
+
+    const restored = await devices.getBindingDevice('cloud-device-trial');
+    expect(restored?.usageAccumulatedMs).toBe(usedMs);
+    expect(restored?.usageQuotaResetAppliedAt).toBe(resetAt);
+  });
 });

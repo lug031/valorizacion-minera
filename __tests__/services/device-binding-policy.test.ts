@@ -18,6 +18,7 @@ function makeDevice(overrides: Partial<DeviceRegistration> = {}): DeviceRegistra
     usagePolicy: 'standard',
     trialLimitMinutes: null,
     usageQuotaResetAt: null,
+    usageQuotaResetAppliedAt: null,
     usageAccumulatedMs: 0,
     notes: null,
     metadataJson: null,

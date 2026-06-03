@@ -47,12 +47,18 @@ export function SyncStatusBanners({
 }: Props) {
   const metadata = useSyncStore((s) => s.metadata);
   const [isConnected, setIsConnected] = useState(true);
+  const [isInternetReachable, setIsInternetReachable] = useState<boolean | null>(null);
   const [outboxBanner, setOutboxBanner] = useState<string | null>(null);
+
+  const applyNetState = useCallback((connected: boolean | null, reachable: boolean | null) => {
+    setIsConnected(connected ?? false);
+    setIsInternetReachable(reachable);
+  }, []);
 
   const refreshNet = useCallback(async () => {
     const net = await NetInfo.fetch();
-    setIsConnected(net.isConnected ?? false);
-  }, []);
+    applyNetState(net.isConnected, net.isInternetReachable);
+  }, [applyNetState]);
 
   const refreshOutbox = useCallback(async () => {
     if (!showValuationOutbox) {
@@ -73,11 +79,11 @@ export function SyncStatusBanners({
 
   useEffect(() => {
     const sub = NetInfo.addEventListener((state) => {
-      setIsConnected(state.isConnected ?? false);
+      applyNetState(state.isConnected, state.isInternetReachable);
       if (showValuationOutbox) void refreshOutbox();
     });
     return () => sub();
-  }, [refreshOutbox, showValuationOutbox]);
+  }, [applyNetState, refreshOutbox, showValuationOutbox]);
 
   useFocusEffect(
     useCallback(() => {
@@ -89,7 +95,7 @@ export function SyncStatusBanners({
   const items: BannerItem[] = [];
 
   const configBanner = showCommercialConfigStatus
-    ? resolveMasterConfigBanner({ isConnected, metadata })
+    ? resolveMasterConfigBanner({ isConnected, isInternetReachable, metadata })
     : null;
   if (configBanner) {
     items.push({

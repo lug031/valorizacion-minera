@@ -243,4 +243,20 @@ export async function runMigrations(db: SqlExecutor): Promise<void> {
       );
     });
   }
+
+  if (currentVersion < 13) {
+    await db.withTransaction(async () => {
+      await addColumnIfMissing(db, 'devices', 'usage_quota_reset_applied_at', 'TEXT');
+      await db.run(
+        `UPDATE devices SET usage_quota_reset_applied_at = usage_quota_reset_at
+         WHERE usage_quota_reset_at IS NOT NULL
+           AND COALESCE(usage_accumulated_ms, 0) > 0`
+      );
+
+      await db.run(
+        `INSERT OR REPLACE INTO schema_migrations (version, applied_at) VALUES (?, datetime('now'))`,
+        [13]
+      );
+    });
+  }
 }

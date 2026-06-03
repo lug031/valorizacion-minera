@@ -31,6 +31,8 @@ export interface DeviceRegistration {
   usagePolicy: 'standard' | 'trial';
   trialLimitMinutes: number | null;
   usageQuotaResetAt: string | null;
+  /** Último usageQuotaResetAt del servidor ya reflejado en usageAccumulatedMs (evita reinicios al reiniciar la app). */
+  usageQuotaResetAppliedAt: string | null;
   usageAccumulatedMs: number;
   notes: string | null;
   metadataJson: string | null;

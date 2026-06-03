@@ -19,6 +19,7 @@ import {
 } from '../utils/build-commercial-catalog-view';
 import { pruneConfigChangelog } from '../../services/sync/config-reference-baseline';
 import { runMasterConfigSyncThrottled } from '../../services/sync/schedule-master-config-sync';
+import { isDeviceSessionSyncError } from '../../services/sync/sync-error-message';
 
 function CommercialCatalogSectionView({ section }: { section: CommercialCatalogSection }) {
   const isChangesOnly = section.displayMode === 'changes_only';
@@ -98,6 +99,10 @@ export function ConfigUpdatesScreen() {
   const totalChanges = countCatalogChanges(sections);
   const busy = loadingCatalog || configLoading || checking;
   const syncFailed = metadata?.status === 'error' && metadata.errorMessage;
+  const syncErrorDisplay =
+    syncFailed && lastSyncAt && isDeviceSessionSyncError(metadata.errorMessage!)
+      ? 'Hay valores descargados anteriormente. Para comprobar cambios nuevos, cierre sesión y vuelva a entrar si el aviso continúa.'
+      : metadata?.errorMessage ?? null;
   const hasCatalog = Boolean(snapshot?.appSettings);
 
   return (
@@ -123,7 +128,7 @@ export function ConfigUpdatesScreen() {
               No se pudo conectar con la web
             </Text>
             <Text variant="bodySmall" style={styles.errorText}>
-              {metadata.errorMessage}
+              {syncErrorDisplay}
             </Text>
           </View>
         ) : null}

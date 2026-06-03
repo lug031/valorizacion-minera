@@ -5,7 +5,6 @@ import { deviceRepository } from '../../data/repositories';
 import { getCloudDeviceId, getEnrollmentMode } from '../../infrastructure/device/enrollment-store';
 
 let activeSinceMs: number | null = null;
-let lastAppliedResetAt: string | null = null;
 
 function trialLimitMs(device: DeviceRegistration): number {
   const minutes = device.trialLimitMinutes;
@@ -27,12 +26,13 @@ export async function loadBindingDeviceForUsage(): Promise<DeviceRegistration | 
 
 export async function syncUsageQuotaFromServer(device: DeviceRegistration): Promise<DeviceRegistration> {
   const resetAt = device.usageQuotaResetAt;
-  if (!resetAt) return device;
-  if (lastAppliedResetAt === resetAt) return device;
+  const cloudDeviceId = device.cloudDeviceId;
+  if (!resetAt || !cloudDeviceId) return device;
+  if (device.usageQuotaResetAppliedAt === resetAt) return device;
 
-  await deviceRepository.resetUsageAccumulated(device.cloudDeviceId!);
-  lastAppliedResetAt = resetAt;
-  return (await loadBindingDeviceForUsage()) ?? { ...device, usageAccumulatedMs: 0 };
+  await deviceRepository.resetUsageAccumulated(cloudDeviceId);
+  await deviceRepository.markUsageQuotaResetApplied(cloudDeviceId, resetAt);
+  return (await loadBindingDeviceForUsage()) ?? { ...device, usageAccumulatedMs: 0, usageQuotaResetAppliedAt: resetAt };
 }
 
 export async function getUsageQuotaSnapshot(): Promise<{

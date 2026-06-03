@@ -18,6 +18,7 @@ import { captureConfigSnapshot } from './config-sync-snapshot';
 import type { ConfigSyncChangelog } from './config-sync-changelog.types';
 import type { SyncConfigResult, SyncMetadata, SyncStatus } from './sync-config.types';
 import { configPayloadChecksum, isConfigBundleUnchanged } from './sync-config-checksum';
+import { mapConfigSyncErrorMessage } from './sync-error-message';
 
 function mapAdminNotesToMetadataJson(
   metadataJson: string | null | undefined,
@@ -109,23 +110,6 @@ const GET_MOBILE_CONFIG_BUNDLE = /* GraphQL */ `
     }
   }
 `;
-
-function mapGraphQLErrorMessage(err: unknown): string {
-  const msg = err instanceof Error ? err.message : 'Error desconocido de sincronización';
-  const lowered = msg.toLowerCase();
-  if (
-    lowered.includes('network') ||
-    lowered.includes('offline') ||
-    lowered.includes('timed out') ||
-    lowered.includes('internet')
-  ) {
-    return 'Sin conexión a internet. Se mantiene la configuración local.';
-  }
-  if (lowered.includes('not authorized') || lowered.includes('unauthorized')) {
-    return 'No tiene permisos para sincronizar configuración.';
-  }
-  return msg;
-}
 
 function maxUpdatedAt(rows: Array<{ updatedAt?: string | null }>): string | null {
   const values = rows.map((r) => r.updatedAt ?? null).filter((v): v is string => Boolean(v)).sort();
@@ -361,7 +345,7 @@ export async function syncMasterConfig(actor: AppActor): Promise<SyncConfigResul
     await sqliteSyncMetadataRepository.saveConfigMetadata(metadata);
     return { metadata };
   } catch (err) {
-    const message = mapGraphQLErrorMessage(err);
+    const message = mapConfigSyncErrorMessage(err);
     const status: SyncStatus = message.toLowerCase().includes('sin conexión') ? 'offline' : 'error';
 
     if (payload) {

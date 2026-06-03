@@ -5,7 +5,6 @@ import { formatUsageDurationMs } from '../../utils/format-usage-quota';
 
 export function UsageQuotaBanner() {
   const gateStatus = useUsageQuotaStore((s) => s.gateStatus);
-  const accumulatedMs = useUsageQuotaStore((s) => s.accumulatedMs);
   const limitMs = useUsageQuotaStore((s) => s.limitMs);
   const remainingMs = useUsageQuotaStore((s) => s.remainingMs);
   const isHydrated = useUsageQuotaStore((s) => s.isHydrated);
@@ -22,10 +21,9 @@ export function UsageQuotaBanner() {
   return (
     <View style={[styles.banner, tone.box]}>
       <Text variant="bodySmall" style={tone.text}>
-        Demo: {formatUsageDurationMs(accumulatedMs)} / {formatUsageDurationMs(limitMs)} de uso
         {gateStatus === 'exceeded'
-          ? ' — cupo agotado'
-          : ` — restan ${formatUsageDurationMs(remainingMs)}`}
+          ? 'Demo: cupo agotado'
+          : `Demo: restan ${formatUsageDurationMs(remainingMs)}`}
       </Text>
     </View>
   );

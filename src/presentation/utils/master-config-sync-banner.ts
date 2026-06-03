@@ -1,15 +1,22 @@
 import type { SyncMetadata } from '../../services/sync/sync-config.types';
+import { isDeviceSessionSyncError } from '../../services/sync/sync-error-message';
 
 export interface MasterConfigBannerState {
   message: string;
   tone: 'warning' | 'error' | 'info';
 }
 
+function isEffectivelyOffline(isConnected: boolean, isInternetReachable?: boolean | null): boolean {
+  if (!isConnected) return true;
+  return isInternetReachable === false;
+}
+
 export function resolveMasterConfigBanner(input: {
   isConnected: boolean;
+  isInternetReachable?: boolean | null;
   metadata: SyncMetadata | null;
 }): MasterConfigBannerState | null {
-  if (!input.isConnected) {
+  if (isEffectivelyOffline(input.isConnected, input.isInternetReachable)) {
     return {
       tone: 'warning',
       message:
@@ -36,11 +43,15 @@ export function resolveMasterConfigBanner(input: {
   }
 
   if (meta.status === 'error') {
+    const errMsg = meta.errorMessage ?? '';
+    const sessionStale =
+      Boolean(meta.lastSyncAt) && errMsg && isDeviceSessionSyncError(errMsg);
     return {
-      tone: 'error',
-      message:
-        meta.errorMessage ??
-        'No se pudieron actualizar los valores desde la web. Revise la conexión e intente de nuevo.',
+      tone: sessionStale ? 'warning' : 'error',
+      message: sessionStale
+        ? 'Hay valores descargados en el teléfono. Para comprobar cambios nuevos, cierre sesión y vuelva a entrar.'
+        : errMsg ||
+          'No se pudieron actualizar los valores desde la web. Revise la conexión e intente de nuevo.',
     };
   }
 
