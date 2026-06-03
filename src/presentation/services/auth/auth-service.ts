@@ -1,6 +1,9 @@
+import NetInfo from '@react-native-community/netinfo';
 import type { AppActor } from '../../../domain/models/app-actor';
 import { userToAppActor } from '../../../domain/identity/app-actor-mapper';
+import type { User } from '../../../domain/models/user';
 import { userRepository } from '../../../data/repositories';
+import { hashPassword } from '../../../data/security/password-hash';
 import { isDeviceEnrollmentRequired } from '../../../config/device-enrollment-required';
 import { getCloudDeviceId, getEnrollmentMode, setEnrollmentMode } from '../../../infrastructure/device/enrollment-store';
 import { saveSessionToken, getSessionToken, clearSessionToken } from './session-storage';
@@ -21,12 +24,58 @@ function parseUserIdFromToken(token: string): string | null {
   return `${parts[1]}-${parts[2]}`;
 }
 
+function isEffectivelyOnline(net: { isConnected: boolean | null; isInternetReachable: boolean | null }): boolean {
+  if (!net.isConnected) return false;
+  return net.isInternetReachable !== false;
+}
+
+/** Valida contraseña en la nube (issueDeviceSessionToken) y alinea el hash local con la web. */
+async function refreshLocalPasswordFromCloudIfEnrolled(
+  password: string,
+  user: User
+): Promise<User | null> {
+  const enrollmentMode = await getEnrollmentMode();
+  if (enrollmentMode !== 'enrolled' || !user.cloudUserId) return null;
+
+  const cloudDeviceId = await getCloudDeviceId();
+  if (!cloudDeviceId) return null;
+
+  const deviceFingerprintHash = await getDeviceFingerprintHash();
+  const sessionToken = await tryIssueAndStoreDeviceSessionToken({
+    cloudDeviceId,
+    username: user.username,
+    password,
+    deviceFingerprintHash,
+  });
+  if (!sessionToken) return null;
+
+  const passwordHash = await hashPassword(password);
+  await userRepository.updatePasswordHash(user.id, passwordHash);
+  return userRepository.findById(user.id);
+}
+
 export async function loginLocal(
   username: string,
   password: string
 ): Promise<AuthUser | null> {
-  const user = await userRepository.verifyCredentials(username, password);
-  if (!user) return null;
+  let user = await userRepository.verifyCredentials(username, password);
+
+  if (!user) {
+    const candidate = await userRepository.findByUsername(username);
+    if (!candidate?.isActive) return null;
+    user = await refreshLocalPasswordFromCloudIfEnrolled(password, candidate);
+    if (!user) return null;
+  } else {
+    const enrollmentMode = await getEnrollmentMode();
+    if (enrollmentMode === 'enrolled') {
+      const net = await NetInfo.fetch();
+      if (isEffectivelyOnline(net)) {
+        const synced = await refreshLocalPasswordFromCloudIfEnrolled(password, user);
+        if (!synced) return null;
+        user = synced;
+      }
+    }
+  }
 
   const authUser = userToAppActor(user);
 

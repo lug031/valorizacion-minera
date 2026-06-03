@@ -33,6 +33,7 @@ export interface UserRepository {
   findByUsername(username: string): Promise<User | null>;
   findById(id: string): Promise<User | null>;
   verifyCredentials(username: string, password: string): Promise<User | null>;
+  updatePasswordHash(userId: string, passwordHash: string): Promise<void>;
   syncProvisionedUsers(users: ProvisionedFieldUserInput[]): Promise<SyncProvisionedUsersResult>;
   applyEnrolledFieldUser(input: EnrolledFieldUserInput): Promise<User>;
   finalizeEnrollmentCleanup(cloudUserId: string, role: UserRole): Promise<void>;
@@ -95,6 +96,14 @@ export function createSqliteUserRepository(getDb: () => Promise<SqlExecutor>): U
       if (!user || !user.isActive) return null;
       const ok = await verifyPassword(password, user.passwordHash);
       return ok ? user : null;
+    },
+
+    async updatePasswordHash(userId, passwordHash) {
+      const db = await getDb();
+      await db.run(
+        `UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?`,
+        [passwordHash, userId]
+      );
     },
 
     async syncProvisionedUsers(users) {
