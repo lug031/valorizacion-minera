@@ -22,7 +22,7 @@ export function UsageQuotaBanner() {
   return (
     <View style={[styles.banner, tone.box]}>
       <Text variant="bodySmall" style={tone.text}>
-        Modo prueba: {formatUsageDurationMs(accumulatedMs)} / {formatUsageDurationMs(limitMs)} de uso
+        Demo: {formatUsageDurationMs(accumulatedMs)} / {formatUsageDurationMs(limitMs)} de uso
         {gateStatus === 'exceeded'
           ? ' — cupo agotado'
           : ` — restan ${formatUsageDurationMs(remainingMs)}`}

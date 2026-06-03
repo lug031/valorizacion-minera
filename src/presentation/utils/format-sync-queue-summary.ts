@@ -36,9 +36,6 @@ export function formatSyncQueueBanner(
   if (counts.error > 0) {
     extras.push(counts.error === 1 ? '1 con error' : `${counts.error} con error`);
   }
-  if (counts.skippedNoCloudUser > 0) {
-    extras.push('algunas requieren actualizar usuarios en Configuración');
-  }
 
   if (extras.length === 0) return base;
   return `${base} (${extras.join('; ')}).`;

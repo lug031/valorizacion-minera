@@ -26,14 +26,18 @@ function makeDevice(overrides: Partial<DeviceRegistration> = {}): DeviceRegistra
 }
 
 describe('buildDeviceAuthorizationBanner', () => {
-  it('incluye gracia y validez administrativa', () => {
+  it('muestra solo validez administrativa cuando aplica', () => {
     const model = buildDeviceAuthorizationBanner(
       makeDevice({ validUntil: '2026-12-31T23:59:59.999Z' }),
       new Date('2026-06-01T16:00:00.000Z')
     );
-    expect(model?.lines.length).toBeGreaterThanOrEqual(2);
-    expect(model?.lines.some((l) => l.includes('confirmación'))).toBe(true);
-    expect(model?.lines.some((l) => l.includes('administrador'))).toBe(true);
+    expect(model?.lines).toHaveLength(1);
+    expect(model?.lines[0]).toContain('administrador');
+    expect(model?.lines.some((l) => l.includes('confirmación'))).toBe(false);
+  });
+
+  it('no muestra banner sin validUntil', () => {
+    expect(buildDeviceAuthorizationBanner(makeDevice({ validUntil: null }))).toBeNull();
   });
 
   it('oculta si no está enrolled', () => {

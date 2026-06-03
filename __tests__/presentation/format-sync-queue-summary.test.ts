@@ -34,14 +34,14 @@ describe('formatSyncQueueBanner', () => {
     );
   });
 
-  it('añade extras cortos', () => {
+  it('añade extras cortos por errores de sync', () => {
     const text = formatSyncQueueBanner(
       { pending: 2, syncing: 0, error: 1, skippedNoCloudUser: 2 },
       { context: 'dashboard' }
     );
     expect(text).toContain('3 cotizaciones pendientes de sincronizar');
     expect(text).toContain('1 con error');
-    expect(text).toContain('actualizar usuarios');
+    expect(text).not.toContain('Configuración');
   });
 });
 
