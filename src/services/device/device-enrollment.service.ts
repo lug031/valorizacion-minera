@@ -103,7 +103,6 @@ const ENROLL_FIELD_DEVICE = /* GraphQL */ `
         displayName
         role
         isActive
-        mobilePasswordHash
       }
       serverTime
     }
@@ -146,18 +145,7 @@ export async function enrollFieldDeviceOnCloud(
       throw new EnrollmentError('UNKNOWN', 'Respuesta incompleta al activar el dispositivo.');
     }
 
-    const derivedPasswordHash = await hashPassword(input.password);
-    const responsePasswordHash = fieldUser.mobilePasswordHash?.trim() || null;
-    if (
-      responsePasswordHash &&
-      responsePasswordHash !== derivedPasswordHash
-    ) {
-      logDevError(
-        '[device-enrollment.service] enrollment_hash_mismatch',
-        'Se usará hash recibido del servidor por compatibilidad'
-      );
-    }
-    const passwordHashForLocalUser = responsePasswordHash ?? derivedPasswordHash;
+    const passwordHashForLocalUser = await hashPassword(input.password);
 
     const localUser = await userRepository.applyEnrolledFieldUser({
       cloudUserId: fieldUser.id,

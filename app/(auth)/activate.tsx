@@ -50,7 +50,7 @@ export default function ActivateDeviceScreen() {
         enrollmentCode: enrollmentCode.trim(),
       });
 
-      const ok = await login(username.trim(), password);
+      const ok = await login(username.trim().toLowerCase(), password);
       if (ok) {
         await refreshDeviceBindingGate();
         scheduleForegroundSync({ forceConfig: true });

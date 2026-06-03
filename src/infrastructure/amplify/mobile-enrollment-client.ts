@@ -49,9 +49,15 @@ export async function runEnrollmentGraphql<TData>(
 
   logDev('[mobile-enrollment-client] response', result.data ?? null);
 
+  const hasUsableData = result.data != null;
   if (result.errors?.length) {
     logDevError('[mobile-enrollment-client] graphql_errors', result.errors);
-    throw new Error(result.errors.map((e) => e.message ?? 'Error de conexión con el servidor').join('; '));
+    if (!hasUsableData) {
+      throw new Error(
+        result.errors.map((e) => e.message ?? 'Error de conexión con el servidor').join('; ')
+      );
+    }
+    // AppSync puede devolver errores de serialización aunque la mutación ya persistió en DynamoDB.
   }
   if (!result.data) {
     throw new Error('Respuesta inválida del servidor.');
