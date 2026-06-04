@@ -24,6 +24,8 @@ type SyncStatusRow = {
     usageQuotaResetAt?: string | null;
     revokedAt?: string | null;
     fieldUserIsActive?: boolean | null;
+    fieldUserRole?: 'admin' | 'operador' | null;
+    fieldUserDisplayName?: string | null;
     lastSeenAt?: string | null;
     serverTime?: string;
   } | null;
@@ -54,6 +56,8 @@ const SYNC_FIELD_DEVICE_STATUS = /* GraphQL */ `
       usageQuotaResetAt
       revokedAt
       fieldUserIsActive
+      fieldUserRole
+      fieldUserDisplayName
       lastSeenAt
       serverTime
     }
@@ -105,11 +109,21 @@ export async function syncFieldDeviceStatusIfEnrolled(): Promise<boolean> {
       usageQuotaResetAt: payload.usageQuotaResetAt ?? null,
     });
 
-    if (payload.fieldUserIsActive === false) {
-      const user = await userRepository.findById(localDevice.userId);
-      if (user?.cloudUserId) {
-        await userRepository.setActiveByCloudUserId(user.cloudUserId, false);
-      }
+    const user = await userRepository.findById(localDevice.userId);
+    if (user?.cloudUserId) {
+      const role =
+        payload.fieldUserRole === 'admin' || payload.fieldUserRole === 'operador'
+          ? payload.fieldUserRole
+          : undefined;
+      await userRepository.updateFieldUserFromCloud({
+        cloudUserId: user.cloudUserId,
+        role,
+        displayName: payload.fieldUserDisplayName?.trim() || undefined,
+        isActive:
+          payload.fieldUserIsActive === true || payload.fieldUserIsActive === false
+            ? payload.fieldUserIsActive
+            : undefined,
+      });
     }
 
     await setLastDeviceSyncAt(payload.serverTime);

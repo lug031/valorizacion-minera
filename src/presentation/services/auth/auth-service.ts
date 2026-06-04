@@ -9,6 +9,7 @@ import { getCloudDeviceId, getEnrollmentMode, setEnrollmentMode } from '../../..
 import { saveSessionToken, getSessionToken, clearSessionToken } from './session-storage';
 import { getDeviceFingerprintHash } from '../../../services/device/device-fingerprint.service';
 import { tryIssueAndStoreDeviceSessionToken } from '../../../services/device/device-session-token.service';
+import { syncFieldDeviceStatusIfEnrolled } from '../../../services/device/device-status-sync.service';
 
 /** Sesión operativa local (alias de AppActor para compatibilidad). */
 export type AuthUser = AppActor;
@@ -52,6 +53,17 @@ async function refreshLocalPasswordFromCloudIfEnrolled(
   const passwordHash = await hashPassword(password);
   await userRepository.updatePasswordHash(user.id, passwordHash);
   return userRepository.findById(user.id);
+}
+
+async function refreshLocalUserProfileFromCloud(user: User): Promise<User> {
+  const enrollmentMode = await getEnrollmentMode();
+  if (enrollmentMode !== 'enrolled') return user;
+
+  const net = await NetInfo.fetch();
+  if (!isEffectivelyOnline(net)) return user;
+
+  await syncFieldDeviceStatusIfEnrolled();
+  return (await userRepository.findById(user.id)) ?? user;
 }
 
 export async function loginLocal(
@@ -99,7 +111,9 @@ export async function loginLocal(
     }
   }
   await recordSession(authUser.id, token);
-  return authUser;
+
+  const refreshed = await refreshLocalUserProfileFromCloud(user);
+  return userToAppActor(refreshed);
 }
 
 import { getSqlExecutor } from '../../../data/db/database';
@@ -129,8 +143,11 @@ export async function restoreSession(): Promise<AuthUser | null> {
   const userId = parseUserIdFromToken(token);
   if (!userId) return null;
 
-  const user = await userRepository.findById(userId);
+  let user = await userRepository.findById(userId);
   if (!user || !user.isActive) return null;
+
+  user = await refreshLocalUserProfileFromCloud(user);
+  if (!user.isActive) return null;
 
   return userToAppActor(user);
 }

@@ -34,6 +34,12 @@ export interface UserRepository {
   findById(id: string): Promise<User | null>;
   verifyCredentials(username: string, password: string): Promise<User | null>;
   updatePasswordHash(userId: string, passwordHash: string): Promise<void>;
+  updateFieldUserFromCloud(input: {
+    cloudUserId: string;
+    role?: UserRole;
+    displayName?: string;
+    isActive?: boolean;
+  }): Promise<void>;
   syncProvisionedUsers(users: ProvisionedFieldUserInput[]): Promise<SyncProvisionedUsersResult>;
   applyEnrolledFieldUser(input: EnrolledFieldUserInput): Promise<User>;
   finalizeEnrollmentCleanup(cloudUserId: string, role: UserRole): Promise<void>;
@@ -103,6 +109,31 @@ export function createSqliteUserRepository(getDb: () => Promise<SqlExecutor>): U
       await db.run(
         `UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?`,
         [passwordHash, userId]
+      );
+    },
+
+    async updateFieldUserFromCloud(input) {
+      const db = await getDb();
+      const sets: string[] = ['updated_at = datetime(\'now\')'];
+      const params: unknown[] = [];
+
+      if (input.role != null) {
+        sets.push('role = ?');
+        params.push(input.role);
+      }
+      if (input.displayName != null) {
+        sets.push('display_name = ?');
+        params.push(input.displayName);
+      }
+      if (input.isActive != null) {
+        sets.push('is_active = ?');
+        params.push(input.isActive ? 1 : 0);
+      }
+
+      params.push(input.cloudUserId);
+      await db.run(
+        `UPDATE users SET ${sets.join(', ')} WHERE cloud_user_id = ?`,
+        params
       );
     },
 
