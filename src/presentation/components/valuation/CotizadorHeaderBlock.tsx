@@ -8,7 +8,6 @@ import { cotizadorStyles } from '../../theme/cotizador-styles';
 import { useConfigStore } from '../../store/config-store';
 import {
   formatMaterialTypeButtonLabel,
-  formatMaterialTypePickerLabel,
   getMaterialTypesForValuationPicker,
 } from '../../utils/material-type-options';
 
@@ -125,7 +124,7 @@ export function CotizadorHeaderBlock({ control, fechaReadOnly = true }: Props) {
                       onChange(mat.code);
                       setMatMenuOpen(false);
                     }}
-                    title={formatMaterialTypePickerLabel(mat)}
+                    title={mat.code}
                   />
                 ))}
               </Menu>

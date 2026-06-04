@@ -1,8 +1,5 @@
 import { FALLBACK_MATERIAL_TYPES } from '../../src/domain/constants/expected-mat-codes';
-import {
-  formatMaterialTypePickerLabel,
-  getActiveMaterialTypesForUi,
-} from '../../src/presentation/utils/material-type-options';
+import { getActiveMaterialTypesForUi } from '../../src/presentation/utils/material-type-options';
 
 describe('getActiveMaterialTypesForUi', () => {
   it('usa fallback con etiquetas oficiales cuando el store está vacío', () => {
@@ -26,19 +23,5 @@ describe('getActiveMaterialTypesForUi', () => {
 
   it('fallback oficial tiene 4 códigos', () => {
     expect(FALLBACK_MATERIAL_TYPES).toHaveLength(4);
-  });
-});
-
-describe('formatMaterialTypePickerLabel', () => {
-  it('muestra código y etiqueta cuando difieren', () => {
-    expect(
-      formatMaterialTypePickerLabel({
-        id: '1',
-        code: 'MOC',
-        label: 'Mineral Oxido Crudo',
-        isActive: true,
-        sortOrder: 1,
-      })
-    ).toBe('MOC — Mineral Oxido Crudo');
   });
 });

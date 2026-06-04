@@ -23,14 +23,6 @@ export function getExpectedMatCodesForUi(
   return getActiveMaterialTypesForUi(materialTypes, hydrated).map((m) => m.code);
 }
 
-export function formatMaterialTypePickerLabel(mat: MaterialType): string {
-  const label = mat.label?.trim();
-  if (label && label.toUpperCase() !== mat.code.toUpperCase()) {
-    return `${mat.code} — ${label}`;
-  }
-  return mat.code;
-}
-
 /**
  * Opciones del menú MAT al editar: solo activos en catálogo actual.
  * El código ya guardado en la cotización se muestra en el botón aunque ya no esté en catálogo.
@@ -57,10 +49,8 @@ export function formatMaterialTypeButtonLabel(
   const normalized = code?.trim().toUpperCase();
   if (!normalized) return 'MAT';
   const match = materialTypes.find((m) => m.code.toUpperCase() === normalized);
-  if (match?.isActive) {
-    return formatMaterialTypePickerLabel(match);
-  }
+  if (match?.isActive) return match.code;
   const fallback = DEFAULT_MATERIAL_TYPES_CATALOG.find((m) => m.code === normalized);
-  if (fallback) return formatMaterialTypePickerLabel({ ...fallback, id: '', isActive: true, metadataJson: null });
+  if (fallback) return fallback.code;
   return `${normalized} (histórico)`;
 }
