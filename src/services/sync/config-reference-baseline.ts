@@ -1,4 +1,5 @@
 import { COTIZADOR_DEFAULTS } from '../../domain/constants/cotizador-defaults';
+import { DEFAULT_MATERIAL_TYPES_CATALOG } from '../../domain/constants/expected-mat-codes';
 import { DEFAULT_MAQUILA_RANGES } from '../../domain/constants/default-maquila-ranges';
 import type { ConfigChangeEntry, ConfigSyncChangelog } from './config-sync-changelog.types';
 import type { ConfigSyncSnapshot } from './config-sync-snapshot';
@@ -10,12 +11,11 @@ import {
 } from './commercial-catalog-fields';
 
 /** Tipos MAT iniciales (schema SQLite / referencia web). */
-export const REFERENCE_MATERIAL_TYPES = [
-  { code: 'MSC', label: 'MSC', isActive: true },
-  { code: 'MOC', label: 'MOC', isActive: true },
-  { code: 'MSLL', label: 'MSLL', isActive: true },
-  { code: 'MOLL', label: 'MOLL', isActive: true },
-] as const;
+export const REFERENCE_MATERIAL_TYPES = DEFAULT_MATERIAL_TYPES_CATALOG.map((m) => ({
+  code: m.code,
+  label: m.label,
+  isActive: true as const,
+}));
 
 /** Catálogo de referencia alineado a COTIZADOR_DEFAULTS y seed del móvil / web. */
 export function getReferenceConfigBaseline(): ConfigSyncSnapshot {

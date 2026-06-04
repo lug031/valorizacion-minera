@@ -174,11 +174,11 @@ export const CREATE_TABLES_SQL: readonly string[] = [
 
 export const SEED_MATERIAL_TYPES_SQL: readonly string[] = [
   `INSERT OR IGNORE INTO material_types (id, code, label, is_active, sort_order)
-   VALUES ('mat-msc', 'MSC', 'MSC', 1, 1);`,
+   VALUES ('mat-moc', 'MOC', 'Mineral Oxido Crudo', 1, 1);`,
   `INSERT OR IGNORE INTO material_types (id, code, label, is_active, sort_order)
-   VALUES ('mat-moc', 'MOC', 'MOC', 1, 2);`,
+   VALUES ('mat-msc', 'MSC', 'Mineral Sulfuro Crudo', 1, 2);`,
   `INSERT OR IGNORE INTO material_types (id, code, label, is_active, sort_order)
-   VALUES ('mat-msll', 'MSLL', 'MSLL', 1, 3);`,
+   VALUES ('mat-moll', 'MOLL', 'Mineral Oxido Llampo', 1, 3);`,
   `INSERT OR IGNORE INTO material_types (id, code, label, is_active, sort_order)
-   VALUES ('mat-moll', 'MOLL', 'MOLL', 1, 4);`,
+   VALUES ('mat-msll', 'MSLL', 'Mineral Sulfuro LLampo', 1, 4);`,
 ];

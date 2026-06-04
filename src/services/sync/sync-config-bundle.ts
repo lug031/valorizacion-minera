@@ -33,10 +33,6 @@ export class BundleValidationError extends Error {
   }
 }
 
-function normalizeCode(code: string): string {
-  return code.trim().toUpperCase();
-}
-
 function countCatalogs(payload: SyncCloudPayload): BundleCatalogCounts {
   const materialTypesActive = payload.materialTypes.filter((m) => m.isActive !== false).length;
   const maquilaRangesActive = payload.maquilaRanges.filter((m) => m.isActive !== false).length;
@@ -86,18 +82,6 @@ export function validatePublishedConfigBundle(payload: SyncCloudPayload): Publis
     issues.push('MaterialType vacío. Cree tipos MAT en la web: /admin/materiales.');
   } else if (counts.materialTypesActive === 0) {
     issues.push('MaterialType sin registros activos. Active al menos un tipo MAT.');
-  } else {
-    const activeCodes = new Set(
-      payload.materialTypes
-        .filter((m) => m.isActive !== false)
-        .map((m) => normalizeCode(m.code))
-    );
-    const missingCodes = EXPECTED_MAT_CODES.filter((code) => !activeCodes.has(code));
-    if (missingCodes.length > 0) {
-      issues.push(
-        `MaterialType incompleto. Faltan códigos activos: ${missingCodes.join(', ')}.`
-      );
-    }
   }
 
   // 2) MaquilaRange

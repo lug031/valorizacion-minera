@@ -1,22 +1,30 @@
 import type { MaterialType } from '../models/config';
 
-/** Tipos MAT válidos según regla de negocio actual (alineado a web/admin). */
-export const EXPECTED_MAT_CODES = ['MSC', 'MOC', 'MSLL', 'MOLL'] as const;
+/** Catálogo MAT inicial (orden y etiquetas alineados a la web). */
+export const DEFAULT_MATERIAL_TYPES_CATALOG = [
+  { code: 'MOC', label: 'Mineral Oxido Crudo', sortOrder: 1 },
+  { code: 'MSC', label: 'Mineral Sulfuro Crudo', sortOrder: 2 },
+  { code: 'MOLL', label: 'Mineral Oxido Llampo', sortOrder: 3 },
+  { code: 'MSLL', label: 'Mineral Sulfuro LLampo', sortOrder: 4 },
+] as const;
 
-export type ExpectedMatCode = (typeof EXPECTED_MAT_CODES)[number];
+/** Códigos del catálogo de referencia (changelog / fallback offline). */
+export const EXPECTED_MAT_CODES = DEFAULT_MATERIAL_TYPES_CATALOG.map((m) => m.code);
 
-/** Fallback offline si aún no hay catálogo en SQLite (sin MOP). */
-export const FALLBACK_MATERIAL_TYPES: readonly MaterialType[] = EXPECTED_MAT_CODES.map(
-  (code, index) => ({
-    id: `mat-${code.toLowerCase()}`,
-    code,
-    label: code,
+export type ExpectedMatCode = (typeof DEFAULT_MATERIAL_TYPES_CATALOG)[number]['code'];
+
+/** Fallback offline si aún no hay catálogo sincronizado en SQLite. */
+export const FALLBACK_MATERIAL_TYPES: readonly MaterialType[] = DEFAULT_MATERIAL_TYPES_CATALOG.map(
+  (row) => ({
+    id: `mat-${row.code.toLowerCase()}`,
+    code: row.code,
+    label: row.label,
     isActive: true,
-    sortOrder: index + 1,
+    sortOrder: row.sortOrder,
     metadataJson: null,
   })
 );
 
 export function isExpectedMatCode(code: string): code is ExpectedMatCode {
-  return (EXPECTED_MAT_CODES as readonly string[]).includes(code.trim().toUpperCase());
+  return EXPECTED_MAT_CODES.includes(code.trim().toUpperCase() as ExpectedMatCode);
 }

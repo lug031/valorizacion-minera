@@ -1,11 +1,10 @@
 import {
-  EXPECTED_MAT_CODES,
+  DEFAULT_MATERIAL_TYPES_CATALOG,
   FALLBACK_MATERIAL_TYPES,
-  isExpectedMatCode,
 } from '../../domain/constants/expected-mat-codes';
 import type { MaterialType } from '../../domain/models/config';
 
-/** MAT activos válidos ordenados por sortOrder; fallback offline sin MOP. */
+/** MAT activos del catálogo sincronizado; fallback solo antes del primer hydrate. */
 export function getActiveMaterialTypesForUi(
   materialTypes: MaterialType[],
   hydrated: boolean
@@ -13,7 +12,7 @@ export function getActiveMaterialTypesForUi(
   const source = materialTypes.length > 0 || hydrated ? materialTypes : [...FALLBACK_MATERIAL_TYPES];
 
   return source
-    .filter((m) => m.isActive && isExpectedMatCode(m.code))
+    .filter((m) => m.isActive)
     .sort((a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code));
 }
 
@@ -21,8 +20,15 @@ export function getExpectedMatCodesForUi(
   materialTypes: MaterialType[],
   hydrated: boolean
 ): readonly string[] {
-  const codes = getActiveMaterialTypesForUi(materialTypes, hydrated).map((m) => m.code);
-  return codes.length > 0 ? codes : EXPECTED_MAT_CODES;
+  return getActiveMaterialTypesForUi(materialTypes, hydrated).map((m) => m.code);
+}
+
+export function formatMaterialTypePickerLabel(mat: MaterialType): string {
+  const label = mat.label?.trim();
+  if (label && label.toUpperCase() !== mat.code.toUpperCase()) {
+    return `${mat.code} — ${label}`;
+  }
+  return mat.code;
 }
 
 /**
@@ -46,13 +52,15 @@ export function getMaterialTypesForValuationPicker(
 export function formatMaterialTypeButtonLabel(
   code: string | undefined | null,
   materialTypes: MaterialType[],
-  hydrated: boolean
+  _hydrated: boolean
 ): string {
   const normalized = code?.trim().toUpperCase();
   if (!normalized) return 'MAT';
-  const active = getActiveMaterialTypesForUi(materialTypes, hydrated);
-  if (active.some((m) => m.code.toUpperCase() === normalized)) {
-    return normalized;
+  const match = materialTypes.find((m) => m.code.toUpperCase() === normalized);
+  if (match?.isActive) {
+    return formatMaterialTypePickerLabel(match);
   }
+  const fallback = DEFAULT_MATERIAL_TYPES_CATALOG.find((m) => m.code === normalized);
+  if (fallback) return formatMaterialTypePickerLabel({ ...fallback, id: '', isActive: true, metadataJson: null });
   return `${normalized} (histórico)`;
 }

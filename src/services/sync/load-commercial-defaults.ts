@@ -1,3 +1,4 @@
+import { useConfigStore } from '../../presentation/store/config-store';
 import { useSettingsStore, type SettingsDefaults } from '../../presentation/store/settings-store';
 import { runMasterConfigSyncThrottled } from './schedule-master-config-sync';
 
@@ -9,7 +10,10 @@ export async function loadCommercialDefaultsForValuation(options?: {
   force?: boolean;
 }): Promise<SettingsDefaults> {
   await runMasterConfigSyncThrottled({ force: options?.force ?? true });
-  await useSettingsStore.getState().hydrateFromDb();
+  await Promise.all([
+    useConfigStore.getState().hydrate(),
+    useSettingsStore.getState().hydrateFromDb(),
+  ]);
   const s = useSettingsStore.getState();
   return {
     factor: s.factor,

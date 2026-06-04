@@ -31,4 +31,13 @@ describe('suggestMaquila', () => {
   it('1.012 oz/tc → 140 (rango 1.001-1.100)', () => {
     expect(suggestMaquila('1.012', ranges)).toBe('140');
   });
+
+  it('ignora rangos inactivos', () => {
+    const custom = [
+      { minLeyOzTc: '0.200', maxLeyOzTc: '0.300', maquila: '90', isActive: false },
+      { minLeyOzTc: '0.301', maxLeyOzTc: '0.400', maquila: '95', isActive: true },
+    ];
+    expect(suggestMaquila('0.250', custom)).toBeNull();
+    expect(suggestMaquila('0.350', custom)).toBe('95');
+  });
 });

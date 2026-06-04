@@ -51,6 +51,18 @@ describe('validatePublishedConfigBundle', () => {
     expect(result.issues.some((i) => i.includes('MaterialType'))).toBe(true);
   });
 
+  it('acepta MAT con códigos distintos al catálogo inicial si hay al menos uno activo', () => {
+    const result = validatePublishedConfigBundle(
+      basePayload({
+        materialTypes: [
+          { id: '1', code: 'MOC', label: 'MOC', isActive: true, sortOrder: 1 },
+          { id: '2', code: 'MSC', label: 'MSC', isActive: false, sortOrder: 2 },
+        ],
+      })
+    );
+    expect(result.isValid).toBe(true);
+  });
+
   it('rechaza maquila vacía', () => {
     const result = validatePublishedConfigBundle(basePayload({ maquilaRanges: [] }));
     expect(result.isValid).toBe(false);
